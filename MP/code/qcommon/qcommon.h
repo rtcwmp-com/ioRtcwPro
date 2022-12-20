@@ -286,6 +286,7 @@ You or the server may be running older versions of the game. Press the auto-upda
 #define	PROTOCOL_VERSION	61
 #define PROTOCOL_LEGACY_VERSION	60
 #define GAMENAME_STRING     "wolfmp"
+#define CODENAME		"BlazkowiczIsBack"
 #else
 // the demo uses a different protocol version for independant browsing
   #define   PROTOCOL_LEGACY_VERSION    50  // NERVE - SMF - wolfMP protocol version
@@ -577,6 +578,15 @@ void    Cvar_Register( vmCvar_t *vmCvar, const char *varName, const char *defaul
 void    Cvar_Update( vmCvar_t *vmCvar );
 // updates an interpreted modules' version of a cvar
 
+cvar_rest_t* Cvar_SetRestricted(const char* var_name, unsigned int type, const char* value, const char* value2);
+// registers cvars for validation list
+
+char* Cvar_GetRestrictedList(void);
+// returns list of restricted cvars
+
+void Cvar_Rest_Reset(void);
+// Wipes the restricted list
+
 void    Cvar_Set( const char *var_name, const char *value );
 // will create the variable with no flags if it doesn't exist
 
@@ -590,6 +600,25 @@ void Cvar_SetLatched( const char *var_name, const char *value );
 // don't set the cvar immediately
 
 void    Cvar_SetValue( const char *var_name, float value );
+
+
+
+
+cvar_rest_t* Cvar_Rest_FindVar(const char* var_name);
+// find restricted cvar in a local table
+
+qboolean Cvar_RestValueIsValid(cvar_rest_t* var, const char* value);
+// checks if value is valid
+
+void Cvar_RestBuildList(char* data);
+// Builds the list
+
+int Cvar_ValidateRest(void);
+// checks if any cvar is violating server restrictions
+
+char* Cvar_RestAcceptedValues(const char* var_name);
+// returns requires values for specific cvar
+
 void	Cvar_SetValueSafe( const char *var_name, float value );
 // expands value to a string and calls Cvar_Set/Cvar_SetSafe
 
@@ -633,6 +662,8 @@ void Cvar_CheckRange( cvar_t *cv, float minVal, float maxVal, qboolean shouldBeI
 
 void	Cvar_Restart(qboolean unsetVM);
 void    Cvar_Restart_f( void );
+
+unsigned int RestrictedTypeToInt(char* str);
 
 void Cvar_CompleteCvarName( char *args, int argNum );
 
@@ -832,8 +863,13 @@ qboolean FS_CL_ExtractFromPakFile( void *searchpath, const char *fullpath, const
 char *FS_ShiftedStrStr( const char *string, const char *substring, int shift );
 char *FS_ShiftStr( const char *string, int shift );
 
+void FS_CopyFile( char *fromOSPath, char *toOSPath );
+qboolean FS_CreatePath( char *OSPath ) ;
 qboolean FS_VerifyPak( const char *pak );
 
+int  submit_curlPost( char* jsonfile, char* matchid );
+void* submit_HTTP_curlPost(void* args) ;
+char* encode_data_b64( char *infilename ) ;
 /*
 ==============================================================
 
@@ -1365,6 +1401,15 @@ extern huffman_t clientHuffTables;
 #define DLF_NO_REDIRECT 2
 #define DLF_NO_UDP 4
 #define DLF_NO_DISCONNECT 8
+
+#define CTL_RKVALD          "rkvald"
+#define RKVALD_OK           "1"
+#define RKVALD_NOT_OK       "0"
+#define RKVALD_TIME_FULL    65000
+#define RKVALD_TIME_PING    10000
+#define RKVALD_TIME_PING_L  40000
+#define RKVALD_TIME_PING_S  20000
+#define RKVALD_TIME_OFF     -1
 
 #endif // _QCOMMON_H_
 

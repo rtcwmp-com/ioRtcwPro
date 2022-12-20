@@ -32,6 +32,58 @@ If you have questions concerning this license or the applicable additional terms
 
 #define SCOREBOARD_WIDTH    ( 31 * BIGCHAR_WIDTH )
 
+#define COUNTRY_FLAG_RENDER_SIZE 16
+#define COUNTRY_FLAG_INDIVIDUAL_SIZE 32
+#define COUNTRY_FLAG_WIDTH 512
+
+/*
+=================
+Scoreboard flags (WolfSE)
+=================
+*/
+static qboolean WM_SE_DrawFlags(float x, float y, float fade, int clientNum) {
+	float alpha[4];
+	unsigned int client_flag = atoi(Info_ValueForKey(CG_ConfigString(clientNum + CS_PLAYERS), "cc"));
+
+	if (client_flag < 255)
+	{
+		float x1 = (float)((client_flag * (unsigned int)COUNTRY_FLAG_INDIVIDUAL_SIZE) % COUNTRY_FLAG_WIDTH);
+		float y1 = (float)(floor((client_flag * COUNTRY_FLAG_INDIVIDUAL_SIZE) / COUNTRY_FLAG_WIDTH) * COUNTRY_FLAG_INDIVIDUAL_SIZE);
+		float x2 = x1 + COUNTRY_FLAG_INDIVIDUAL_SIZE;
+		float y2 = y1 + COUNTRY_FLAG_INDIVIDUAL_SIZE;
+		alpha[0] = alpha[1] = alpha[2] = alpha[3] = fade;
+
+		trap_R_SetColor(alpha);
+
+		CG_DrawPicST(x, y - 12, COUNTRY_FLAG_RENDER_SIZE, COUNTRY_FLAG_RENDER_SIZE, x1 / COUNTRY_FLAG_WIDTH, y1 / COUNTRY_FLAG_WIDTH,
+			x2 / COUNTRY_FLAG_WIDTH, y2 / COUNTRY_FLAG_WIDTH, cgs.media.countryFlags);
+
+		trap_R_SetColor(NULL);
+
+		return qtrue;
+	}
+
+	return qfalse;
+}
+
+/*
+=================
+RtcwPro - Ready state
+=================
+*/
+int is_ready( int clientNum ) {
+	int i, rdy=0;
+
+	for ( i = 0 ; i < cgs.maxclients ; i++ ) {
+		if (cgs.clientinfo[i].team != TEAM_SPECTATOR && cgs.clientinfo[i].clientNum == clientNum) {
+			rdy = (cgs.clientinfo[clientNum].powerups & (1 << PW_READY)) ? 1 : 0;
+			//rdy = player_ready_status[clientNum].isReady;
+			return rdy;
+		}
+	}
+
+return rdy;
+}
 /*
 =================
 CG_DrawScoreboard
@@ -208,6 +260,7 @@ int WM_DrawObjectives( int x, int y, int width, float fade ) {
 	if ( cg.snap->ps.pm_type != PM_INTERMISSION ) {
 		CG_DrawSmallString( x, y, CG_TranslateString( "Goals" ), fade );
 	}
+	CG_DrawSmallString(x + 530, y, CG_GetClock(), fade); // RTCWPro - time
 	y += SMALLCHAR_HEIGHT + 3;
 
 	// draw color bands
@@ -244,19 +297,19 @@ int WM_DrawObjectives( int x, int y, int width, float fade ) {
 			flagshader = "ui_mp/assets/portraits/allies_win_flag.tga";
 			nameshader = "ui_mp/assets/portraits/text_allies.tga";
 
-			if ( !cg.latchVictorySound ) {
+			/*if ( !cg.latchVictorySound ) {
 				cg.latchVictorySound = qtrue;
 				trap_S_StartLocalSound( trap_S_RegisterSound( "sound/multiplayer/music/l_complete_2.wav" ), CHAN_LOCAL_SOUND );
-			}
+			}*/
 		} else {
 			shader = "ui_mp/assets/portraits/axis_win";
 			flagshader = "ui_mp/assets/portraits/axis_win_flag.tga";
 			nameshader = "ui_mp/assets/portraits/text_axis.tga";
 
-			if ( !cg.latchVictorySound ) {
+			/*if ( !cg.latchVictorySound ) {
 				cg.latchVictorySound = qtrue;
 				trap_S_StartLocalSound( trap_S_RegisterSound( "sound/multiplayer/music/s_stinglow.wav" ), CHAN_LOCAL_SOUND );
-			}
+			}*/
 		}
 
 		y += SMALLCHAR_HEIGHT * ( ( rows - 2 ) / 2 );
@@ -287,18 +340,24 @@ int WM_DrawObjectives( int x, int y, int width, float fade ) {
 		tens = seconds / 10;
 		seconds -= tens * 10;
 
-		if ( msec < 0 ) {
+		// RtcwPro
+		if ( msec < 0 && cgs.gamestate != GS_WARMUP) { // don't show sudden death during warmup
 			s = va( "%s %s", CG_TranslateString( "Mission time:" ),  CG_TranslateString( "Sudden Death" ) );
+			CG_DrawSmallString(x, y, s, fade);
 		} else {
-			s = va( "%s   %2.0f:%i%i", CG_TranslateString( "Mission time:" ), (float)mins, tens, seconds ); // float cast to line up with reinforce time
-
+			if (cgs.gamestate == GS_PLAYING) {
+				s = va("%s   %2.0f:%i%i", CG_TranslateString("Mission time:"), (float)mins, tens, seconds); // float cast to line up with reinforce time
+				CG_DrawSmallString(x, y, s, fade);
+			}
+			else if (cgs.gamestate == GS_WARMUP) {
+				s = va("%s %s", CG_TranslateString("Mission time:"), CG_TranslateString("WARMUP"));
+				CG_DrawSmallString(x, y, s, fade);
+			}
 		}
-		CG_DrawSmallString( x,y,s,fade );
 
-		if ( cgs.clientinfo[cg.snap->ps.clientNum].team == TEAM_RED ) {
-			msec = cg_redlimbotime.integer - ( cg.time % cg_redlimbotime.integer );
-		} else if ( cgs.clientinfo[cg.snap->ps.clientNum].team == TEAM_BLUE )     {
-			msec = cg_bluelimbotime.integer - ( cg.time % cg_bluelimbotime.integer );
+		// RtcwPro - Reinforcement Offset (patched)
+		if ( cgs.clientinfo[cg.snap->ps.clientNum].team == TEAM_RED || cgs.clientinfo[cg.snap->ps.clientNum].team == TEAM_BLUE ) {
+			msec = CG_CalculateReinfTime(qfalse) * 1000;
 		} else { // no team (spectator mode)
 			msec = 0;
 		}
@@ -396,6 +455,7 @@ static void WM_DrawClientScore( int x, int y, score_t *score, float *color, floa
 			width = INFO_CLASS_WIDTH + INFO_SCORE_WIDTH + INFO_LATENCY_WIDTH;
 
 			CG_FillRect( tempx, y + 1, width - INFO_BORDER, SMALLCHAR_HEIGHT - 1, hcolor );
+			tempx += width;
 		} else {
 			CG_FillRect( tempx, y + 1, INFO_CLASS_WIDTH - INFO_BORDER, SMALLCHAR_HEIGHT - 1, hcolor );
 			tempx += INFO_CLASS_WIDTH;
@@ -404,6 +464,7 @@ static void WM_DrawClientScore( int x, int y, score_t *score, float *color, floa
 			tempx += INFO_SCORE_WIDTH;
 
 			CG_FillRect( tempx, y + 1, INFO_LATENCY_WIDTH - INFO_BORDER, SMALLCHAR_HEIGHT - 1, hcolor );
+			tempx += INFO_LATENCY_WIDTH;
 		}
 	}
 
@@ -433,6 +494,25 @@ static void WM_DrawClientScore( int x, int y, score_t *score, float *color, floa
 		}
 	}
 
+	// RtcwPro - Ready
+	if ((cgs.gamestate == GS_WARMUP || cgs.gamestate == GS_WARMUP_COUNTDOWN) && cgs.readyState) {
+		char *rdy = ( ( is_ready(ci->clientNum) ) ? "^2!" : "^1?");
+
+		if (ci->team != TEAM_SPECTATOR)
+			CG_DrawSmallString( tempx-11, y, va( "%s", rdy ), fade );
+	}
+
+	// RtcwPro - Country Flags
+	if ((score->ping != -1) && (score->ping != 999) && (cg_showFlags.integer))
+	{
+		if (WM_SE_DrawFlags(tempx + 2, y + 13, fade, ci->clientNum)) //tempx - 6, y - 7, fade, ci->clientNum))
+		{
+			offset += 14;
+			tempx += 18;
+			maxchars -= 2;
+		}
+	}
+
 	// draw name
 	CG_DrawStringExt( tempx, y, ci->name, hcolor, qfalse, qfalse, SMALLCHAR_WIDTH, SMALLCHAR_HEIGHT, maxchars );
 	tempx += INFO_PLAYER_WIDTH - offset;
@@ -444,7 +524,7 @@ static void WM_DrawClientScore( int x, int y, score_t *score, float *color, floa
 
 		totalwidth = INFO_CLASS_WIDTH + INFO_SCORE_WIDTH + INFO_LATENCY_WIDTH - 8;
 
-		s = CG_TranslateString( "^3SPECTATOR" );
+		s = va("^3(%i) %s", score->ping, ci->shoutStatus ? "SHOUTCASTER" : "SPECTATOR"); //CG_TranslateString("SPECTATOR"));
 		w = CG_DrawStrlen( s ) * SMALLCHAR_WIDTH;
 
 		CG_DrawSmallString( tempx + totalwidth - w, y, s, fade );
@@ -473,6 +553,7 @@ static void WM_DrawClientScore( int x, int y, score_t *score, float *color, floa
 	tempx += INFO_SCORE_WIDTH;
 
 	CG_DrawSmallString( tempx, y, va( "%4i", score->ping ), fade );
+	tempx += INFO_LATENCY_WIDTH;
 }
 
 const char* WM_TimeToString( float msec ) {
@@ -532,6 +613,24 @@ static int WM_DrawInfoLine( int x, int y, float fade ) {
 	return y + INFO_LINE_HEIGHT + 10;
 }
 
+/*
+	RtcwPro - Calculate Average Ping for desired team
+*/
+int calculateAvgPing(team_t team) {
+	int i, j = 0, k = 0;
+
+	for (i = 0; i < cg.numScores; i++) {
+		if (team != cgs.clientinfo[cg.scores[i].client].team) {
+			continue;
+		}
+
+		k += cg.scores[i].ping;
+		j++;
+	}
+	return ( (j && k) ? round(k / j) : 0 );
+}
+// -RtcwPro
+
 static int WM_TeamScoreboard( int x, int y, team_t team, float fade, int maxrows ) {
 	vec4_t hcolor;
 	float tempx, tempy;
@@ -558,9 +657,46 @@ static int WM_TeamScoreboard( int x, int y, team_t team, float fade, int maxrows
 
 	// draw header
 	if ( team == TEAM_RED ) {
-		CG_DrawSmallString( x, y, va( "%s [%d] (%d %s)", CG_TranslateString( "Axis" ), cg.teamScores[0], cg.teamPlayers[team], CG_TranslateString( "players" ) ), fade );
+		char *str;
+		CG_DrawSmallString( x + 26, y, va( "%s [%d] (%d %s)", CG_TranslateString( "Axis" ), cg.teamScores[0], cg.teamPlayers[team], CG_TranslateString( "players" ) ), fade );
+		// RtcwPro - Average Ping
+		str = va("^nAVG PING");
+		CG_DrawStringExt(x + width - 5 - (CG_DrawStrlen(str) * (TINYCHAR_WIDTH - 2)),
+			y,
+			str,
+			colorWhite, qfalse, qfalse,
+			TINYCHAR_WIDTH - 2,
+			TINYCHAR_HEIGHT - 1, 0);
+
+		str = va("^n%3d", calculateAvgPing(TEAM_RED));
+		CG_DrawStringExt(x + width - 5 - (3 * (TINYCHAR_WIDTH - 2)),
+			y + 6,
+			str,
+			colorWhite, qfalse, qfalse,
+			TINYCHAR_WIDTH - 2,
+			TINYCHAR_HEIGHT - 1, 0);
+		// -RtcwPro
 	} else if ( team == TEAM_BLUE ) {
-		CG_DrawSmallString( x, y, va( "%s [%d] (%d %s)", CG_TranslateString( "Allies" ), cg.teamScores[1], cg.teamPlayers[team], CG_TranslateString( "players" ) ), fade );
+		char *str;
+		//CG_DrawPic(x + 2, y + 4, 2 * TOURINFO_TEXTSIZE, TOURINFO_TEXTSIZE, trap_R_RegisterShaderNoMip("ui_mp/assets/usa_flag.tga"));
+		CG_DrawSmallString( x + 26, y, va( "%s [%d] (%d %s)", CG_TranslateString( "Allies" ), cg.teamScores[1], cg.teamPlayers[team], CG_TranslateString( "players" ) ), fade );
+		// RtcwPro - Average Ping
+		str = va("^nAVG PING");
+		CG_DrawStringExt(x + width - 5 - (CG_DrawStrlen(str) * (TINYCHAR_WIDTH - 2)),
+			y,
+			str,
+			colorWhite, qfalse, qfalse,
+			TINYCHAR_WIDTH - 2,
+			TINYCHAR_HEIGHT - 1, 0);
+
+		str = va("^n%3d", calculateAvgPing(TEAM_BLUE));
+		CG_DrawStringExt(x + width - 5 - (3 * (TINYCHAR_WIDTH - 2)),
+			y + 6,
+			str,
+			colorWhite, qfalse, qfalse,
+			TINYCHAR_WIDTH - 2,
+			TINYCHAR_HEIGHT - 1, 0);
+		// -RtcwPro
 	}
 	y += SMALLCHAR_HEIGHT + 4;
 
@@ -598,6 +734,7 @@ static int WM_TeamScoreboard( int x, int y, team_t team, float fade, int maxrows
 	tempx += INFO_SCORE_WIDTH;
 
 	CG_DrawSmallString( tempx, y, CG_TranslateString( "Ping" ), fade );
+	tempx += INFO_LATENCY_WIDTH;
 
 	y += SMALLCHAR_HEIGHT;
 
@@ -676,6 +813,7 @@ qboolean CG_DrawScoreboard( void ) {
 	if ( cg.showScores || ( cg.predictedPlayerState.pm_type == PM_DEAD && cgs.gametype < GT_WOLF ) ||
 		 cg.predictedPlayerState.pm_type == PM_INTERMISSION ) {
 		fade = 1.0;
+		fadeColor = colorWhite;
 	} else {
 		fadeColor = CG_FadeColor( cg.scoreFadeTime, FADE_TIME );
 

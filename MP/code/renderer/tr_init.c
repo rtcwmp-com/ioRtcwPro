@@ -785,10 +785,10 @@ void R_ScreenShot_f (void) {
 		for ( ; lastNumber <= 9999 ; lastNumber++ ) {
 			R_ScreenshotFilename( lastNumber, checkname );
 
-      if (!ri.FS_FileExists( checkname ))
-      {
-        break; // file doesn't exist
-      }
+			if (!ri.FS_FileExists( checkname ))
+			{
+				break; // file doesn't exist
+			}
 		}
 
 		if ( lastNumber >= 9999 ) {
@@ -804,7 +804,21 @@ void R_ScreenShot_f (void) {
 	if ( !silent ) {
 		ri.Printf (PRINT_ALL, "Wrote %s\n", checkname);
 	}
-} 
+
+}
+
+/*
+================
+RTCWPro - reqSS
+================
+*/
+void R_GenerateSS_f(char* filename) {
+	char* filepath[MAX_OSPATH];
+
+	Com_sprintf(filepath, sizeof(filepath), "screenshots/%s.jpg", filename);
+	R_TakeScreenshot( 0, 0, glConfig.vidWidth, glConfig.vidHeight, filepath, qtrue );
+}
+
 
 void R_ScreenShotJPEG_f (void) {
 	char		checkname[MAX_OSPATH];
@@ -820,6 +834,14 @@ void R_ScreenShotJPEG_f (void) {
 		silent = qtrue;
 	} else {
 		silent = qfalse;
+	}
+
+	// RTCWPro - make a turn here coz the code below is just brain dead
+	if (!strcmp(ri.Cmd_Argv(1), "reqss")) {
+		if (strlen(ri.Cmd_Argv(2))) {
+			R_GenerateSS_f(ri.Cmd_Argv(2));
+		}
+		return;
 	}
 
 	if ( ri.Cmd_Argc() == 2 && !silent ) {
@@ -838,10 +860,10 @@ void R_ScreenShotJPEG_f (void) {
 		for ( ; lastNumber <= 9999 ; lastNumber++ ) {
 			R_ScreenshotFilenameJPEG( lastNumber, checkname );
 
-      if (!ri.FS_FileExists( checkname ))
-      {
-        break; // file doesn't exist
-      }
+			if (!ri.FS_FileExists( checkname ))
+			{
+				break; // file doesn't exist
+			}
 		}
 
 		if ( lastNumber == 10000 ) {
@@ -1304,7 +1326,7 @@ void R_Register( void ) {
 	// done.
 
 	// Rafael - wolf fog
-	r_wolffog = ri.Cvar_Get( "r_wolffog", "1", CVAR_CHEAT ); // JPW NERVE cheat protected per id request
+	r_wolffog = ri.Cvar_Get( "r_wolffog", "1", CVAR_ARCHIVE ); // JPW NERVE cheat protected per id request, altered in rtcwpro
 	// done
 
 	r_nocurves = ri.Cvar_Get( "r_nocurves", "0", CVAR_CHEAT );

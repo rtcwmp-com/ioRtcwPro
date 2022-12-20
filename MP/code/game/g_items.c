@@ -350,9 +350,10 @@ void Add_Ammo( gentity_t *ent, int weapon, int count, qboolean fillClip ) {
 
 	} else {                                        // using clips
 		totalcount = ent->client->ps.ammo[ammoweap] + ent->client->ps.ammoclip[BG_FindClipForWeapon( weapon )];
-		if ( totalcount > ammoTable[ammoweap].maxammo ) {
-			ent->client->ps.ammo[ammoweap] = ammoTable[ammoweap].maxammo - ent->client->ps.ammoclip[BG_FindClipForWeapon( weapon )];
-		}
+		// RtcwPro - let the user keep adding ammo from guns they pickup
+		//if ( totalcount > ammoTable[ammoweap].maxammo ) {
+		//	ent->client->ps.ammo[ammoweap] = ammoTable[ammoweap].maxammo - ent->client->ps.ammoclip[BG_FindClipForWeapon( weapon )];
+		//}
 
 	}
 
@@ -416,6 +417,11 @@ int Pickup_Weapon( gentity_t *ent, gentity_t *other ) {
 						}
 						ent->parent->client->PCSpecialPickedUpCount++;
 					}
+					// RtcwPro - /stats
+					if ((ent->parent) && (ent->parent != other) &&
+						(OnSameTeam(ent->parent, other)))
+						ent->parent->client->sess.ammo_given++;
+					// End
 				}
 			}
 		}
@@ -559,6 +565,11 @@ int Pickup_Health( gentity_t *ent, gentity_t *other ) {
 					}
 					ent->parent->client->PCSpecialPickedUpCount++;
 				}
+				// RtcwPro - /stats
+				if ((ent->parent) && (ent->parent != other) &&
+					(OnSameTeam(ent->parent, other)))
+					ent->parent->client->sess.med_given++;
+				// end
 			}
 		}
 	}
@@ -740,6 +751,15 @@ void Touch_Item( gentity_t *ent, gentity_t *other, trace_t *trace ) {
 		return;
 	}
 
+	// OSPx - Don't let them pickup winning stuff in warmup
+	if (g_gamestate.integer != GS_PLAYING) {
+		if (ent->item->giType != IT_WEAPON &&
+			ent->item->giType != IT_AMMO &&
+			ent->item->giType != IT_HEALTH) {
+			return;
+		}
+	}
+	
 	G_LogPrintf( "Item: %i %s\n", other->s.number, ent->item->classname );
 
 	// call the item-specific pickup function
@@ -925,7 +945,8 @@ gentity_t *LaunchItem( gitem_t *item, vec3_t origin, vec3_t velocity, int ownerN
 
 	trap_Trace( &tr, origin, dropped->r.mins, dropped->r.maxs, origin, ownerNum, MASK_SOLID );
 	if ( tr.startsolid ) {
-		VectorSubtract( g_entities[ownerNum].s.origin, origin, temp );
+		//VectorSubtract( g_entities[ownerNum].s.origin, origin, temp );
+		VectorSubtract( g_entities[ownerNum].r.currentOrigin, origin, temp ); // RtcwPro fix for documents falling through walls
 		VectorNormalize( temp );
 
 		for ( i = 16; i <= 48; i += 16 ) {

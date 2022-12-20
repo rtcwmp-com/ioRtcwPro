@@ -471,6 +471,12 @@ void hurt_touch( gentity_t *self, gentity_t *other, trace_t *trace ) {
 		return;
 	}
 
+	// RtcwPro - if game is paused don't hurt at all.
+	// Would be kinda lame to be paused on barbwire with damage on :D
+	if ( level.paused ) {
+		return;
+	}
+	// RtcwPro - end
 	if ( self->spawnflags & 16 ) {
 		self->timestamp = level.time + 1000;
 	} else {
@@ -891,6 +897,9 @@ void SP_trigger_flagonly( gentity_t *ent ) {
 	G_SpawnString( "score", "20", &scorestring );
 	ent->accuracy = atof( scorestring );
 	// jpw
+
+	ent->r.svFlags &= ~SVF_NOCLIENT; // RTCWPro - has to be sent in order for draw triggers to work
+	ent->s.eType = ET_CONCUSSIVE_TRIGGER; // RTCWPro - hijack this to let the cgame know what to draw
 
 	trap_LinkEntity( ent );
 }

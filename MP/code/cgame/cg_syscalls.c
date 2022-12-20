@@ -77,6 +77,10 @@ void trap_Cvar_VariableStringBuffer( const char *var_name, char *buffer, int buf
 	syscall( CG_CVAR_VARIABLESTRINGBUFFER, var_name, buffer, bufsize );
 }
 
+int trap_Cvar_VariableIntegerValue(const char* var_name) {
+	return syscall(CG_CVAR_VARIABLEINTEGERVALUE, var_name);
+}
+
 int     trap_Argc( void ) {
 	return syscall( CG_ARGC );
 }
@@ -528,3 +532,15 @@ void trap_TranslateString( const char *string, char *buf ) {
 	syscall( CG_TRANSLATE_STRING, string, buf );
 }
 // -NERVE - SMF
+void trap_Rest_Validate(void) {
+	syscall(CG_R_VALIDATE);
+}
+
+void trap_Rest_Build(const char *data) {
+	syscall(CG_R_BUILD, data);
+}
+
+// reqSS
+//void trap_RequestSS(char* address, char* hookid, char* hooktoken, char* waittime, char* datetime) {
+//	syscall(CG_REQUEST_SS, address, hookid, hooktoken, waittime, datetime);
+//}

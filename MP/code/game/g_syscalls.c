@@ -68,6 +68,10 @@ void    trap_Argv( int n, char *buffer, int bufferLength ) {
 	syscall( G_ARGV, n, buffer, bufferLength );
 }
 
+int		trap_FS_FileExists(const char* filename) {
+	return syscall(G_FS_FILE_EXIST, filename);
+}
+
 int     trap_FS_FOpenFile( const char *qpath, fileHandle_t *f, fsMode_t mode ) {
 	return syscall( G_FS_FOPEN_FILE, qpath, f, mode );
 }
@@ -108,8 +112,15 @@ void trap_Cvar_Set( const char *var_name, const char *value ) {
 	syscall( G_CVAR_SET, var_name, value );
 }
 
+void trap_Cvar_Restrictions_Load(void) {
+	syscall(G_CVAR_REST_LOAD);
+}
 int trap_Cvar_VariableIntegerValue( const char *var_name ) {
 	return syscall( G_CVAR_VARIABLE_INTEGER_VALUE, var_name );
+}
+
+int trap_submit_curlPost( char* jsonfile, char* matchid ) {
+	return syscall( G_SUBMIT_STATS_CURL, jsonfile, matchid );
 }
 
 void trap_Cvar_VariableStringBuffer( const char *var_name, char *buffer, int bufsize ) {
@@ -127,6 +138,11 @@ void trap_DropClient( int clientNum, const char *reason ) {
 }
 
 void trap_SendServerCommand( int clientNum, const char *text ) {
+	if (strlen(text) > 1022) {
+		G_LogPrintf("ALERT: trap_SendServerCommand( %d, ... ) length exceeds 1022.\n", clientNum);
+		G_LogPrintf("text [%s]\n", text);
+		return;
+	}
 	syscall( G_SEND_SERVER_COMMAND, clientNum, text );
 }
 
@@ -234,10 +250,27 @@ int trap_RealTime( qtime_t *qtime ) {
 
 void trap_SnapVector( float *v ) {
 	syscall( G_SNAPVECTOR, v );
+	return;
 }
 
-qboolean trap_GetTag( int clientNum, char *tagName, orientation_t *or ) {
-	return syscall( G_GETTAG, clientNum, tagName, or );
+qboolean trap_GetTag(gentity_t* ent, clientAnimationInfo_t* animInfo, char* tagName, orientation_t* or ) {
+	return syscall(G_GETTAG, ent, animInfo, tagName, or );
+}
+
+int trap_PC_LoadSource(const char* filename) {
+	return syscall(BOTLIB_PC_LOAD_SOURCE, filename);
+}
+
+int trap_PC_FreeSource(int handle) {
+	return syscall(BOTLIB_PC_FREE_SOURCE, handle);
+}
+
+int trap_PC_ReadToken(int handle, pc_token_t* pc_token) {
+	return syscall(BOTLIB_PC_READ_TOKEN, handle, pc_token);
+}
+
+int trap_PC_SourceFileAndLine(int handle, char* filename, int* line) {
+	return syscall(BOTLIB_PC_SOURCE_FILE_AND_LINE, handle, filename, line);
 }
 
 // BotLib traps start here

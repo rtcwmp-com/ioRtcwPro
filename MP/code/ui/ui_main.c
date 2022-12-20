@@ -108,12 +108,39 @@ static const char *teamArenaGameTypes[] = {
 	"SP",
 	"TEAM DM",
 	"CTF",
-	"WOLF MP",               // NERVE - SMF
-	"WOLF SW",               // NERVE - SMF
-	"WOLF CP"               // NERVE - SMF
+	"MP",               // NERVE - SMF
+	"SW",               // NERVE - SMF
+	"CP",               // NERVE - SMF
+	"TEAMTOURNAMENT"
 };
 
 static int const numTeamArenaGameTypes = ARRAY_LEN( teamArenaGameTypes );
+
+
+static const char *teamArenaGameNames[] = {
+	"Free For All",
+	"Tournament",
+	"Single Player",
+	"Team Deathmatch",
+	"Capture the Flag",
+	"Wolf Multiplayer",
+	"Wolf Stopwatch",
+	"Wolf Checkpoint"
+};
+
+static int const numTeamArenaGameNames = sizeof( teamArenaGameNames ) / sizeof( const char* );
+
+
+
+
+static const char *sortKeys[] = {
+	"Server Name",
+	"Map Name",
+	"Open Player Spots",
+	"Game Type",
+	"Ping Time"
+};
+static const int numSortKeys = sizeof( sortKeys ) / sizeof( const char* );
 
 static char* netnames[] = {
 	"???",
@@ -360,7 +387,12 @@ void AssetCache( void ) {
 	uiInfo.uiDC.Assets.sliderThumb = trap_R_RegisterShaderNoMip( ASSET_SLIDER_THUMB );
 
 	for ( n = 0; n < NUM_CROSSHAIRS; n++ ) {
-		uiInfo.uiDC.Assets.crosshairShader[n] = trap_R_RegisterShaderNoMip( va( "gfx/2d/crosshair%c", 'a' + n ) );
+		// RtcwPro - Crosshairs
+		uiInfo.uiDC.Assets.crosshairShader[n] = trap_R_RegisterShaderNoMip( va( "gfx/2d/crosshair%c_rtcwpro", 'a' + n ) );  //nihi commented
+		//uiInfo.uiDC.Assets.crosshairShader[n] = trap_R_RegisterShaderNoMip( va( "gfx/2d/crosshair%c", 'a' + n ) );  //nihi addded
+
+        uiInfo.uiDC.Assets.crosshairAltShader[n] = trap_R_RegisterShaderNoMip(va("gfx/2d/crosshair%c_alt_rtcwpro", 'a' + n)); //nihi commented
+		//uiInfo.uiDC.Assets.crosshairAltShader[n] = trap_R_RegisterShaderNoMip(va("gfx/2d/crosshair%c_alt", 'a' + n)); //nihi added
 	}
 
 	//uiInfo.newHighScoreSound = trap_S_RegisterSound("sound/feedback/voc_newhighscore.wav");
@@ -530,7 +562,55 @@ int Text_Height( const char *text, float scale, int limit ) {
 	}
 	return max * useScale;
 }
+int Multiline_Text_Height( const char *text, float scale, int limit ) {
+	int len, count;
+	float max;
+	float totalheight = 0;
+	glyphInfo_t *glyph;
+	const char *s = text;
+	//fontInfo_t *font = &uiInfo.uiDC.Assets.fonts[uiInfo.activeFont];
+	fontInfo_t *font = &uiInfo.uiDC.Assets.textFont;
 
+	max = 0;
+	if ( text ) {
+		len = strlen( text );
+		if ( limit > 0 && len > limit ) {
+			len = limit;
+		}
+		count = 0;
+		while ( s && *s && count < len ) {
+			if ( Q_IsColorString( s ) ) {
+				s += 2;
+				continue;
+			} else {
+				if ( *s == '\n' ) {
+					if ( !totalheight ) {
+						totalheight += 5;   // 5 is the vertical spacing that autowrap painting uses
+					}
+					totalheight += max;
+					max = 0;
+				} else {
+					glyph = &font->glyphs[(unsigned char)*s];           // NERVE - SMF - this needs to be an unsigned cast for localization
+					if ( max < glyph->height ) {
+						max = glyph->height;
+					}
+				}
+				s++;
+				count++;
+			}
+		}
+	}
+
+	if ( totalheight > 0 ) {
+		if ( !totalheight ) {
+			totalheight += 5;   // 5 is the vertical spacing that autowrap painting uses
+		}
+		totalheight += max;
+		return totalheight * scale * font->glyphScale;
+	} else {
+		return max * scale * font->glyphScale;
+	}
+}
 void Text_PaintChar( float x, float y, float width, float height, float scale, float s, float t, float s2, float t2, qhandle_t hShader ) {
 	float w, h;
 	w = width * scale;
@@ -1053,6 +1133,10 @@ void _UI_Refresh( int realtime ) {
 
 
 	UI_UpdateCvars();
+	// RtcwPro - blackout if speclocked
+	if ( ui_blackout.integer > 0 ) {
+		UI_FillRect( -10, -10, 650, 490, colorBlack );
+	}
 
 	if ( Menu_Count() > 0 ) {
 		// paint all the menus
@@ -2404,7 +2488,14 @@ static void UI_DrawCrosshair( rectDef_t *rect, float scale, vec4_t color ) {
 	if ( uiInfo.currentCrosshair < 0 || uiInfo.currentCrosshair >= NUM_CROSSHAIRS ) {
 		uiInfo.currentCrosshair = 0;
 	}
+
+	// RtcwPro - Crosshairs
+	trap_R_SetColor( uiInfo.xhairColor );
 	UI_DrawHandlePic( rect->x, rect->y - rect->h, rect->w, rect->h, uiInfo.uiDC.Assets.crosshairShader[uiInfo.currentCrosshair] );
+	trap_R_SetColor( uiInfo.xhairColorAlt );
+	UI_DrawHandlePic( rect->x, rect->y - rect->h, rect->w, rect->h, uiInfo.uiDC.Assets.crosshairAltShader[uiInfo.currentCrosshair] );
+	// -RtcwPro
+
 	trap_R_SetColor( NULL );
 }
 
@@ -4379,10 +4470,10 @@ static void UI_Update( const char *name ) {
 			trap_Cvar_Set( "cl_maxpackets", "30" );
 			trap_Cvar_Set( "cl_packetdup", "1" );
 		} else if ( rate >= 4000 ) {
-			trap_Cvar_Set( "cl_maxpackets", "15" );
+			trap_Cvar_Set( "cl_maxpackets", "30" );
 			trap_Cvar_Set( "cl_packetdup", "2" );       // favor less prediction errors when there's packet loss
 		} else {
-			trap_Cvar_Set( "cl_maxpackets", "15" );
+			trap_Cvar_Set( "cl_maxpackets", "30" );
 			trap_Cvar_Set( "cl_packetdup", "1" );       // favor lower bandwidth
 		}
 	} else if ( Q_stricmp( name, "ui_GetName" ) == 0 ) {
@@ -4428,7 +4519,7 @@ static void UI_Update( const char *name ) {
 			trap_Cvar_SetValue( "r_fastSky", 0 );
 			trap_Cvar_SetValue( "r_dynamiclight", 1 );
 			trap_Cvar_SetValue( "r_inGameVideo", 1 );
-			trap_Cvar_SetValue( "cg_shadows", 1 );
+			trap_Cvar_SetValue( "cg_shadows", 0 );
 			trap_Cvar_SetValue( "cg_brassTime", 2500 );
 			trap_Cvar_Set( "r_texturemode", "GL_LINEAR_MIPMAP_LINEAR" );
 			trap_Cvar_SetValue( "r_ext_compressed_textures", 0 );
@@ -4461,7 +4552,7 @@ static void UI_Update( const char *name ) {
 			trap_Cvar_SetValue( "r_fastSky", 0 );
 			trap_Cvar_SetValue( "r_dynamiclight", 1 );
 			trap_Cvar_SetValue( "r_inGameVideo", 1 );
-			trap_Cvar_SetValue( "cg_shadows", 1 );
+			trap_Cvar_SetValue( "cg_shadows", 0 );
 			trap_Cvar_SetValue( "cg_brassTime", 2500 );
 			trap_Cvar_Set( "r_texturemode", "GL_LINEAR_MIPMAP_LINEAR" );
 			trap_Cvar_SetValue( "r_ext_compressed_textures", 0 );
@@ -4878,14 +4969,69 @@ static void UI_RunMenuScript( char **args ) {
 			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
 				trap_Cmd_ExecuteText( EXEC_APPEND, va( "callvote kick \"%s\"\n",uiInfo.playerNames[uiInfo.playerIndex] ) );
 			}
+
+		} else if ( Q_stricmp( name, "voteMute" ) == 0 ) {
+			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "callvote mute \"%s\"\n", uiInfo.playerNames[uiInfo.playerIndex] ) );
+			}
+
+		} else if ( Q_stricmp( name, "voteUnMute" ) == 0 ) {
+			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "callvote unmute \"%s\"\n", uiInfo.playerNames[uiInfo.playerIndex] ) );
+			}
+
+		} else if ( Q_stricmp( name, "voteReferee" ) == 0 ) {
+			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "callvote referee \"%s\"\n", uiInfo.playerNames[uiInfo.playerIndex] ) );
+			}
+
+		} else if ( Q_stricmp( name, "voteUnReferee" ) == 0 ) {
+			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "callvote unreferee \"%s\"\n", uiInfo.playerNames[uiInfo.playerIndex] ) );
+			}
+
 		} else if ( Q_stricmp( name, "voteGame" ) == 0 ) {
 			if ( ui_netGameType.integer >= 0 && ui_netGameType.integer < uiInfo.numGameTypes ) {
-				trap_Cmd_ExecuteText( EXEC_APPEND, va( "callvote g_gametype %i\n",uiInfo.gameTypes[ui_netGameType.integer].gtEnum ) );
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "callvote gametype %i\n",uiInfo.gameTypes[ui_netGameType.integer].gtEnum ) );
 			}
+
+		} else if ( Q_stricmp( name, "refGame" ) == 0 ) {
+			int ui_netGameType = trap_Cvar_VariableValue( "ui_netGameType" );
+			if (ui_netGameType >= 0 && ui_netGameType < uiInfo.numGameTypes ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "ref gametype %i\n", uiInfo.gameTypes[ui_netGameType].gtEnum) );
+			}
+
+		} else if ( Q_stricmp( name, "voteTimelimit" ) == 0 ) {
+			trap_Cmd_ExecuteText( EXEC_APPEND, va( "callvote timelimit %f\n", trap_Cvar_VariableValue( "ui_voteTimelimit" ) ) );
+
+		} else if ( Q_stricmp( name, "voteWarmupDamage" ) == 0 ) {
+			trap_Cmd_ExecuteText( EXEC_APPEND, va( "callvote warmupdamage %d\n", (int)trap_Cvar_VariableValue( "ui_voteWarmupDamage" ) ) );
+
+		} else if (Q_stricmp(name, "voteAntilag") == 0) {
+			trap_Cmd_ExecuteText(EXEC_APPEND, va("callvote antilag %f\n", trap_Cvar_VariableValue("ui_voteAntilag")));
+
+		} else if ( Q_stricmp( name, "refTimelimit" ) == 0 ) {
+			trap_Cmd_ExecuteText( EXEC_APPEND, va( "ref timelimit %f\n", trap_Cvar_VariableValue( "ui_voteTimelimit" ) ) );
+
+		} else if ( Q_stricmp( name, "refWarmupDamage" ) == 0 ) {
+			trap_Cmd_ExecuteText( EXEC_APPEND, va( "ref warmupdamage %d\n", (int)trap_Cvar_VariableValue( "ui_voteWarmupDamage" ) ) );
+
+		} else if ( Q_stricmp( name, "voteInitToggles" ) == 0 ) {
+			char info[MAX_INFO_STRING];
+
+			trap_GetConfigString( CS_SERVERTOGGLES, info, sizeof( info ) );
+			trap_Cvar_Set( "ui_voteWarmupDamage", va( "%d", ( ( atoi( info ) & CV_SVS_WARMUPDMG ) >> 2 ) ) );
+
+			trap_Cvar_Set("ui_voteAntilag", va("%d", atoi(Info_ValueForKey(info, "g_antilag"))));
+
+			trap_GetConfigString( CS_SERVERINFO, info, sizeof( info ) );
+			trap_Cvar_Set( "ui_voteTimelimit", va( "%i", atoi( Info_ValueForKey( info, "timelimit" ) ) ) );
+
 		} else if ( Q_stricmp( name, "voteLeader" ) == 0 ) {
 			if ( uiInfo.teamIndex >= 0 && uiInfo.teamIndex < uiInfo.myTeamCount ) {
 				trap_Cmd_ExecuteText( EXEC_APPEND, va( "callteamvote leader %s\n",uiInfo.teamNames[uiInfo.teamIndex] ) );
 			}
+
 		} else if ( Q_stricmp( name, "addBot" ) == 0 ) {
 			if ( trap_Cvar_VariableValue( "g_gametype" ) >= GT_TEAM ) {
 				trap_Cmd_ExecuteText( EXEC_APPEND, va( "addbot %s %i %s\n", uiInfo.characterList[uiInfo.botIndex].name, uiInfo.skillIndex + 1, ( uiInfo.redBlue == 0 ) ? "Red" : "Blue" ) );
@@ -5023,6 +5169,94 @@ static void UI_RunMenuScript( char **args ) {
 		} else if ( Q_stricmp( name, "showSpecScores" ) == 0 ) {
 			if ( atoi( UI_Cvar_VariableString( "ui_isSpectator" ) ) ) {
 				trap_Cmd_ExecuteText( EXEC_APPEND, "+scores\n" );
+			}
+		} else if ( Q_stricmp( name, "rconGame" ) == 0 ) {
+			if ( ui_netGameType.integer >= 0 && ui_netGameType.integer < uiInfo.numGameTypes ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "rcon g_gametype %i\n", ui_netGameType.integer ) );
+			}
+		} else if ( Q_stricmp( name, "rconMap" ) == 0 ) {
+			if ( ui_currentNetMap.integer >= 0 && ui_currentNetMap.integer < uiInfo.mapCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "rcon map %s\n",uiInfo.mapList[ui_currentNetMap.integer].mapLoadName ) );
+			}
+		} else if ( Q_stricmp( name, "refMap" ) == 0 ) {
+			if ( ui_currentNetMap.integer >= 0 && ui_currentNetMap.integer < uiInfo.mapCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "ref map %s\n", uiInfo.mapList[ui_currentNetMap.integer].mapLoadName ) );
+			}
+		} else if ( Q_stricmp( name, "rconKick" ) == 0 ) {
+			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "rcon kick \"%s\"\n",uiInfo.playerNames[uiInfo.playerIndex] ) );
+			}
+		} else if ( Q_stricmp( name, "refKick" ) == 0 ) {
+			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "ref kick \"%s\"\n",uiInfo.playerNames[uiInfo.playerIndex] ) );
+			}
+		} else if ( Q_stricmp( name, "rconBan" ) == 0 ) {
+			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "rcon ban \"%s\"\n",uiInfo.playerNames[uiInfo.playerIndex] ) );
+			}
+		} else if ( Q_stricmp( name, "refMute" ) == 0 ) {
+			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "ref mute \"%s\"\n",uiInfo.playerNames[uiInfo.playerIndex] ) );
+			}
+		} else if ( Q_stricmp( name, "refUnMute" ) == 0 ) {
+			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "ref unmute \"%s\"\n",uiInfo.playerNames[uiInfo.playerIndex] ) );
+			}
+		} else if ( Q_stricmp( name, "refMakeAxis" ) == 0 ) {
+			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "ref putaxis \"%s\"\n",uiInfo.playerNames[uiInfo.playerIndex] ) );
+			}
+		} else if ( Q_stricmp( name, "refMakeAllied" ) == 0 ) {
+			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "ref putallies \"%s\"\n",uiInfo.playerNames[uiInfo.playerIndex] ) );
+			}
+		} else if ( Q_stricmp( name, "refMakeSpec" ) == 0 ) {
+			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "ref remove \"%s\"\n",uiInfo.playerNames[uiInfo.playerIndex] ) );
+			}
+		} else if ( Q_stricmp( name, "refUnReferee" ) == 0 ) {
+			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "ref unreferee \"%s\"\n",uiInfo.playerNames[uiInfo.playerIndex] ) );
+			}
+		} else if ( Q_stricmp( name, "refMakeReferee" ) == 0 ) {
+			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "ref referee \"%s\"\n",uiInfo.playerNames[uiInfo.playerIndex] ) );
+			}
+		} else if ( Q_stricmp( name, "rconMakeReferee" ) == 0 ) {
+			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "rcon makeReferee \"%s\"\n",uiInfo.playerNames[uiInfo.playerIndex] ) );
+			}
+		} else if ( Q_stricmp( name, "rconRemoveReferee" ) == 0 ) {
+			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "rcon removeReferee \"%s\"\n",uiInfo.playerNames[uiInfo.playerIndex] ) );
+			}
+		} else if ( Q_stricmp( name, "rconMute" ) == 0 ) {
+			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "rcon mute \"%s\"\n",uiInfo.playerNames[uiInfo.playerIndex] ) );
+			}
+		} else if ( Q_stricmp( name, "rconUnMute" ) == 0 ) {
+			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "rcon unmute \"%s\"\n",uiInfo.playerNames[uiInfo.playerIndex] ) );
+			}
+		} else if ( Q_stricmp( name, "refWarning" ) == 0 ) {
+			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
+				char buffer[128];
+				trap_Cvar_VariableStringBuffer( "ui_warnreason", buffer, 128 );
+
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "ref warn \"%s\" \"%s\"\n",uiInfo.playerNames[uiInfo.playerIndex], buffer ) );
+			}
+		} else if ( Q_stricmp( name, "refWarmup" ) == 0 ) {
+			char buffer[128];
+			trap_Cvar_VariableStringBuffer( "ui_warmup", buffer, 128 );
+
+			trap_Cmd_ExecuteText( EXEC_APPEND, va( "ref warmup \"%s\"\n", buffer ) );
+		} else if ( Q_stricmp( name, "ignorePlayer" ) == 0 ) {
+			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "ignore \"%s\"\n",uiInfo.playerNames[uiInfo.playerIndex] ) );
+			}
+		} else if ( Q_stricmp( name, "unIgnorePlayer" ) == 0 ) {
+			if ( uiInfo.playerIndex >= 0 && uiInfo.playerIndex < uiInfo.playerCount ) {
+				trap_Cmd_ExecuteText( EXEC_APPEND, va( "unignore \"%s\"\n",uiInfo.playerNames[uiInfo.playerIndex] ) );
 			}
 		} else if ( Q_stricmp( name, "wm_sayPlayerClass" ) == 0 ) {
 			int playerType;
@@ -5191,7 +5425,11 @@ static void UI_RunMenuScript( char **args ) {
 				trap_SetPbSvStatus( 1 );
 			}
 		} else if ( Q_stricmp( name, "openModURL" ) == 0 ) {
-			trap_Cvar_Set( "ui_finalURL", UI_Cvar_VariableString( "ui_modURL" ) );
+			//trap_Cvar_Set( "ui_finalURL", UI_Cvar_VariableString( "ui_modURL" ) );
+			trap_Cmd_ExecuteText(EXEC_NOW, "openModURL");
+		} else if (Q_stricmp(name, "openModSource") == 0) {
+			//trap_Cvar_Set( "ui_finalURL", UI_Cvar_VariableString( "ui_modURL" ) );
+			trap_Cmd_ExecuteText(EXEC_NOW, "openModSource");
 		} else if ( Q_stricmp( name, "openServerURL" ) == 0 ) {
 			trap_Cvar_Set( "ui_finalURL", UI_Cvar_VariableString( "ui_URL" ) );
 		} else if ( Q_stricmp( name, "validate_openURL" ) == 0 ) {
@@ -6094,6 +6332,9 @@ static const char *UI_FeederItemText( float feederID, int index, int column, qha
 	static char hostname[1024];
 	static char clientBuff[32];
 	static char pingstr[10];
+	static char fs_game[32];
+	static char gamename[32];
+	static char mapname_clean[32];
 	static int lastColumn = -1;
 	static int lastTime = 0;
 	*handle = -1;
@@ -6145,7 +6386,15 @@ static const char *UI_FeederItemText( float feederID, int index, int column, qha
 			case SORT_GAME:
 				game = atoi( Info_ValueForKey( info, "gametype" ) );
 				if ( game >= 0 && game < numTeamArenaGameTypes ) {
-					return teamArenaGameTypes[game];
+					Q_strncpyz( fs_game, Q_strlwr( Info_ValueForKey( info, "game" ) ), sizeof( fs_game ) );   // Get it so we can filter
+					if ( !Q_stricmp( fs_game, "" ) ) {
+						Q_strncpyz( fs_game, "main", sizeof( fs_game ) );       // none set, replace with main
+
+					}
+					// martin - 6/1 - clean the string here because it might be a null fs_game which will crash
+					Com_sprintf( gamename, sizeof( gamename ), "%.2s/^N%.7s", teamArenaGameTypes[game], Q_CleanStr( fs_game ) );
+					return gamename;
+					//return teamArenaGameTypes[game];
 				} else {
 					return "Unknown";
 				}
@@ -7043,6 +7292,7 @@ void _UI_Init( qboolean inGameLoad ) {
 	uiInfo.uiDC.translateString = &UI_TranslateString;            // NERVE - SMF
 	uiInfo.uiDC.checkAutoUpdate = &trap_CheckAutoUpdate;            // DHM - Nerve
 	uiInfo.uiDC.getAutoUpdate = &trap_GetAutoUpdate;                // DHM - Nerve
+    uiInfo.uiDC.multiLineTextHeight = &Multiline_Text_Height;
 
 	Init_Display( &uiInfo.uiDC );
 
@@ -7642,6 +7892,7 @@ vmCvar_t ui_mapIndex;
 
 vmCvar_t ui_browserMaster;
 vmCvar_t ui_browserGameType;
+vmCvar_t ui_browserSortKey;
 vmCvar_t ui_browserShowFull;
 vmCvar_t ui_browserShowEmpty;
 vmCvar_t ui_browserShowFriendlyFire;            // NERVE - SMF
@@ -7683,6 +7934,23 @@ vmCvar_t ui_userAlliedRespawnTime;
 vmCvar_t ui_userAxisRespawnTime;
 vmCvar_t ui_glCustom;    // JPW NERVE missing from q3ta
 // -NERVE - SMF
+
+// RtcwPro
+
+// Crosshairs
+vmCvar_t ui_crosshairColor;
+vmCvar_t ui_crosshairColorAlt;
+vmCvar_t ui_crosshairAlpha;
+vmCvar_t ui_crosshairAlphaAlt;
+vmCvar_t ui_crosshairSize;
+
+// Speclock
+vmCvar_t ui_blackout;
+vmCvar_t ui_showtooltips;
+// -RtcwPro
+vmCvar_t ui_demoDir;
+vmCvar_t ui_gameversion;
+vmCvar_t fs_game;
 
 cvarTable_t cvarTable[] = {
 
@@ -7780,6 +8048,7 @@ cvarTable_t cvarTable[] = {
 
 	{ &ui_browserMaster, "ui_browserMaster", "0", CVAR_ARCHIVE },
 	{ &ui_browserGameType, "ui_browserGameType", "0", CVAR_ARCHIVE },
+	{ &ui_browserSortKey, "ui_browserSortKey", "4", CVAR_ARCHIVE },
 	{ &ui_browserShowFull, "ui_browserShowFull", "1", CVAR_ARCHIVE },
 	{ &ui_browserShowEmpty, "ui_browserShowEmpty", "1", CVAR_ARCHIVE },
 	{ &ui_browserShowFriendlyFire, "ui_browserShowFriendlyFire", "0", CVAR_ARCHIVE },
@@ -7812,8 +8081,22 @@ cvarTable_t cvarTable[] = {
 	{ &ui_isSpectator, "ui_isSpectator", "1", 0 },
 	// -NERVE - SMF
 
+// OSPx
+	// cgame mappings
+	{ &ui_crosshairColor, "cg_crosshairColor", "White", CVAR_ARCHIVE },
+	{ &ui_crosshairColorAlt, "cg_crosshairColorAlt", "White", CVAR_ARCHIVE },
+	{ &ui_crosshairSize, "cg_crosshairSize", "48", CVAR_ARCHIVE },
+	{ &ui_crosshairAlphaAlt, "cg_crosshairAlphaAlt", "1.0", CVAR_ARCHIVE },
+	{ &ui_crosshairAlpha, "cg_crosshairAlpha", "1.0", CVAR_ARCHIVE },
+	// Speclock
+	{ &ui_blackout, "ui_blackout", "0", CVAR_ROM },
+// -OSPx
+	{ &ui_showtooltips,     "ui_showtooltips",           "1", CVAR_ARCHIVE },
 	{ &ui_hudAlpha, "cg_hudAlpha", "1.0", CVAR_ARCHIVE },
 
+	{ &ui_demoDir, "ui_demoDir", "demos", CVAR_ARCHIVE },
+	{ &fs_game, "fs_game", "", 0 },
+	{ &ui_gameversion, "ui_gameversion", GAMEVERSION, CVAR_ROM },
 	{ NULL, "g_localTeamPref", "", 0 },
 };
 
@@ -7832,6 +8115,11 @@ void UI_RegisterCvars( void ) {
 	for ( i = 0, cv = cvarTable ; i < cvarTableSize ; i++, cv++ ) {
 		trap_Cvar_Register( cv->vmCvar, cv->cvarName, cv->defaultString, cv->cvarFlags );
 	}
+
+	// RtcwPro - Crosshairs
+	BG_setCrosshair(ui_crosshairColor.string, uiInfo.xhairColor, ui_crosshairAlpha.value, "cg_crosshairColor");
+	BG_setCrosshair(ui_crosshairColorAlt.string, uiInfo.xhairColorAlt, ui_crosshairAlphaAlt.value, "cg_crosshairColorAlt");
+	uiInfo.currentCrosshair = ui_drawCrosshair.integer;
 }
 
 /*
@@ -7849,6 +8137,18 @@ void UI_UpdateCvars( void ) {
 		}
 
 		trap_Cvar_Update( cv->vmCvar );
+
+		// RtcwPro
+		if (cv->vmCvar == &ui_crosshairColor || cv->vmCvar == &ui_crosshairAlpha) {
+			BG_setCrosshair(ui_crosshairColor.string, uiInfo.xhairColor, ui_crosshairAlpha.value, "cg_crosshairColor");
+		}
+		if (cv->vmCvar == &ui_crosshairColorAlt || cv->vmCvar == &ui_crosshairAlphaAlt) {
+			BG_setCrosshair(ui_crosshairColorAlt.string, uiInfo.xhairColorAlt, ui_crosshairAlphaAlt.value, "cg_crosshairColorAlt");
+		}
+		if (cv->vmCvar == &ui_drawCrosshair) {
+			uiInfo.currentCrosshair = ui_drawCrosshair.integer;
+		}
+		//-RtcwPro
 	}
 }
 

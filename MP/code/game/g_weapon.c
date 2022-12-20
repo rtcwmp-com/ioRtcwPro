@@ -275,6 +275,101 @@ void Weapon_MagicAmmo( gentity_t *ent ) {
 }
 // jpw
 
+/*
+================
+RTCWPro
+This is taken out of Weapon_Syringe
+so it can be used for other stuff
+NOTE: this is only used for testing and user has to be a referee
+================
+*/
+qboolean ReviveEntity(gentity_t* ent, gentity_t* traceEnt)
+{
+	vec3_t   org, maxs;
+	trace_t  tr;
+	int      healamt, headshot, oldweapon, oldweaponstate, oldclasstime = 0;
+	qboolean usedSyringe = qfalse;          // DHM - Nerve
+	int      ammo[MAX_WEAPONS];         // JPW NERVE total amount of ammo
+	int      ammoclip[MAX_WEAPONS];     // JPW NERVE ammo in clip
+	int      weapons[MAX_WEAPONS / (sizeof(int) * 8)];  // JPW NERVE 64 bits for weapons held
+//	gentity_t	*traceEnt,
+	gentity_t* te;
+
+	// heal the dude
+	// copy some stuff out that we'll wanna restore
+	VectorCopy(traceEnt->client->ps.origin, org);
+	headshot = traceEnt->client->ps.eFlags & EF_HEADSHOT;
+	healamt = traceEnt->client->ps.stats[STAT_MAX_HEALTH] * 0.5;
+	oldweapon = traceEnt->client->ps.weapon;
+	oldweaponstate = traceEnt->client->ps.weaponstate;
+
+	// keep class special weapon time to keep them from exploiting revives
+	oldclasstime = traceEnt->client->ps.classWeaponTime;
+
+	memcpy(ammo, traceEnt->client->ps.ammo, sizeof(int) * MAX_WEAPONS);
+	memcpy(ammoclip, traceEnt->client->ps.ammoclip, sizeof(int) * MAX_WEAPONS);
+	memcpy(weapons, traceEnt->client->ps.weapons, sizeof(int) * (MAX_WEAPONS / (sizeof(int) * 8)));
+
+	ClientSpawn(traceEnt, qtrue);
+
+	// L0 - antilag
+	G_ResetTrail(traceEnt);
+
+	memcpy(traceEnt->client->ps.ammo, ammo, sizeof(int) * MAX_WEAPONS);
+	memcpy(traceEnt->client->ps.ammoclip, ammoclip, sizeof(int) * MAX_WEAPONS);
+	memcpy(traceEnt->client->ps.weapons, weapons, sizeof(int) * (MAX_WEAPONS / (sizeof(int) * 8)));
+
+	if (headshot)
+		traceEnt->client->ps.eFlags |= EF_HEADSHOT;
+	traceEnt->client->ps.weapon = oldweapon;
+	traceEnt->client->ps.weaponstate = oldweaponstate;
+
+	traceEnt->client->ps.classWeaponTime = oldclasstime;
+
+	traceEnt->health = healamt;
+	VectorCopy(org, traceEnt->s.origin);
+	VectorCopy(org, traceEnt->r.currentOrigin);
+	VectorCopy(org, traceEnt->client->ps.origin);
+
+	trap_Trace(&tr, traceEnt->client->ps.origin, traceEnt->client->ps.mins, traceEnt->client->ps.maxs, traceEnt->client->ps.origin, traceEnt->s.number, MASK_PLAYERSOLID);
+	if (tr.allsolid) {
+		if (tr.entityNum >= MAX_CLIENTS) {
+			traceEnt->client->ps.pm_flags |= PMF_DUCKED;
+		}
+	}
+
+	trap_LinkEntity(ent);
+
+	traceEnt->s.effect3Time = level.time;
+	traceEnt->r.contents = CONTENTS_CORPSE;
+	traceEnt->props_frame_state = ent->s.number;
+
+	// DHM - Nerve :: Mark that the medicine was indeed dispensed
+	usedSyringe = qtrue;
+
+	// sound
+	te = G_TempEntity(traceEnt->r.currentOrigin, EV_GENERAL_SOUND);
+	te->s.eventParm = G_SoundIndex("sound/multiplayer/vo_revive.wav");
+
+	// Xian -- This was gay and I always hated it.
+	if (g_fastres.integer > 0)
+		BG_AnimScriptEvent(&traceEnt->client->ps, ANIM_ET_JUMP, qfalse, qtrue);
+	else
+	{
+		// NOTE(nobo): This is what the pm_time should have been set to all along..
+		// Then the invul and time lock would actually match the animation duration..
+		/*traceEnt->client->ps.pm_time = */BG_AnimScriptEvent(&traceEnt->client->ps, ANIM_ET_REVIVE, qfalse, qtrue);
+		traceEnt->client->ps.pm_flags |= PMF_TIME_LOCKPLAYER;
+		traceEnt->client->ps.pm_time = 2100;
+		traceEnt->client->revive_animation_playing = qtrue;
+		traceEnt->client->movement_lock_begin_time = level.time;
+	}
+
+	// Tell the caller if we actually used a syringe
+	return usedSyringe;
+
+}
+
 // JPW NERVE Weapon_Syringe:
 /*
 ======================
@@ -327,6 +422,10 @@ void Weapon_Syringe( gentity_t *ent ) {
 
 				ClientSpawn( traceEnt, qtrue );
 
+				// RtcwPro - Antilag
+				G_ResetTrail(traceEnt);
+				// end
+
 				memcpy( traceEnt->client->ps.ammo,ammo,sizeof( int ) * MAX_WEAPONS );
 				memcpy( traceEnt->client->ps.ammoclip,ammoclip,sizeof( int ) * MAX_WEAPONS );
 				memcpy( traceEnt->client->ps.weapons,weapons,sizeof( int ) * ( MAX_WEAPONS / ( sizeof( int ) * 8 ) ) );
@@ -359,6 +458,16 @@ void Weapon_Syringe( gentity_t *ent ) {
 
 				// DHM - Nerve :: Mark that the medicine was indeed dispensed
 				usedSyringe = qtrue;
+				
+				// RtcwPro Stats
+				if ( g_gamestate.integer == GS_PLAYING ) {
+					ent->client->sess.aWeaponStats[WS_SYRINGE].hits++;
+					ent->client->sess.revives++;
+					if (g_gameStatslog.integer) {
+                        //G_writeGeneralEvent(traceEnt,ent," ",eventRevive);
+                       //// G_writeReviveEvent (traceEnt->client->pers.netname, ent->client->pers.netname);
+					}
+				} // End
 
 				// sound
 				te = G_TempEntity( traceEnt->r.currentOrigin, EV_GENERAL_SOUND );
@@ -373,6 +482,9 @@ void Weapon_Syringe( gentity_t *ent ) {
 					BG_AnimScriptEvent( &traceEnt->client->ps, ANIM_ET_REVIVE, qfalse, qtrue );
 					traceEnt->client->ps.pm_flags |= PMF_TIME_LOCKPLAYER;
 					traceEnt->client->ps.pm_time = 2100;
+					// RTCWPro: revive anim bug fix
+					traceEnt->client->revive_animation_playing = qtrue;
+					traceEnt->client->movement_lock_begin_time = level.time;
 				}
 
 
@@ -549,6 +661,7 @@ void Weapon_Engineer( gentity_t *ent ) {
 							} else if ( ( ent->client->sess.sessionTeam == TEAM_RED ) && ( hit->spawnflags & ALLIED_OBJECTIVE ) )         { // redundant but added for code clarity
 								te->s.eventParm = G_SoundIndex( "sound/multiplayer/axis/g-dynamite_planted.wav" );
 							}
+						}
 
 							if ( hit->spawnflags & AXIS_OBJECTIVE ) {
 								te->s.teamNum = TEAM_RED;
@@ -567,18 +680,39 @@ void Weapon_Engineer( gentity_t *ent ) {
 								 ( ( hit->spawnflags & ALLIED_OBJECTIVE ) && ( ent->client->sess.sessionTeam == TEAM_RED ) ) ) {
 								if ( hit->track ) {
 									trap_SendServerCommand( -1, va( "cp \"%s\" 1", va( "Dynamite planted near %s!", hit->track ) ) );
+									G_matchPrintInfo(va("^5Dynamite planted near %s!", hit->track), qfalse);
+
+									if (g_gamestate.integer == GS_PLAYING)
+									{
+										ent->client->sess.dyn_planted++;
+										if (g_gameStatslog.integer) {
+											////G_writeObjectiveEvent((( hit->spawnflags & AXIS_OBJECTIVE ) && ( ent->client->sess.sessionTeam == TEAM_BLUE )) ? "Allied" : "Axis", "Dynamite planted", va("%s",ent->client->pers.netname)   );
+											//G_writeObjectiveEvent(ent, objDynPlant);
+
+										}
+									}
 								} else {
 									trap_SendServerCommand( -1, va( "cp \"%s\" 1", va( "Dynamite planted near objective #%d!", hit->count ) ) );
+									G_matchPrintInfo(va("^5Dynamite planted near objective #%d!", hit->count), qfalse);
+								
+									if (g_gamestate.integer == GS_PLAYING)
+									{
+										ent->client->sess.dyn_planted++;
+										if (g_gameStatslog.integer) {
+											////G_writeObjectiveEvent((( hit->spawnflags & AXIS_OBJECTIVE ) && ( ent->client->sess.sessionTeam == TEAM_BLUE )) ? "Allied" : "Axis", "Dynamite planted", va("%s",ent->client->pers.netname)   );
+											//G_writeObjectiveEvent(ent, objDynPlant);
+
+										}
+									}
 								}
-							}
-							i = num;
+						}
+								i = num;
 	
-							if ( ( !( hit->spawnflags & OBJECTIVE_DESTROYED ) ) &&
-								 te->s.teamNum && ( te->s.teamNum != ent->client->sess.sessionTeam ) ) {
-								AddScore( traceEnt->parent, WOLF_DYNAMITE_PLANT ); // give drop score to guy who dropped it
-								traceEnt->parent = ent; // give explode score to guy who armed it
-//	jpw pulled						hit->spawnflags |= OBJECTIVE_DESTROYED; // this is pretty kludgy but we can't test it in explode fn
-							}
+								if ( ( !( hit->spawnflags & OBJECTIVE_DESTROYED ) ) &&
+									 te->s.teamNum && ( te->s.teamNum != ent->client->sess.sessionTeam ) ) {
+									AddScore( traceEnt->parent, WOLF_DYNAMITE_PLANT ); // give drop score to guy who dropped it
+									traceEnt->parent = ent; // give explode score to guy who armed it
+	//	jpw pulled						hit->spawnflags |= OBJECTIVE_DESTROYED; // this is pretty kludgy but we can't test it in explode fn
 						}
 // jpw
 					}
@@ -668,8 +802,14 @@ void G_AirStrikeExplode( gentity_t *self ) {
 	self->r.svFlags &= ~SVF_NOCLIENT;
 	self->r.svFlags |= SVF_BROADCAST;
 
+	// RTCWPro - moved here due to rogue bombs that never truly exploded
+	self->damage = 400;
+	self->splashDamage = 400;
+	self->splashRadius = 400;
+
 	self->think = G_ExplodeMissile;
 	self->nextthink = level.time + 50;
+
 }
 
 #define NUMBOMBS 10
@@ -752,10 +892,14 @@ void weapon_callAirStrike( gentity_t *ent ) {
 		bomb->s.weapon      = WP_ARTY; // might wanna change this
 		bomb->r.ownerNum    = ent->s.number;
 		bomb->parent        = ent->parent;
-		bomb->damage        = 400; // maybe should un-hard-code these?
-		bomb->splashDamage  = 400;
+		// RTCWPro - moved to G_AirStrikeExplode and changed the rest to 0 due to rogue bombs that never truly explode
+		//bomb->damage = 400; // maybe should un-hard-code these?
+		//bomb->splashDamage = 400;
+		bomb->damage        = 0;//400; // maybe should un-hard-code these?
+		bomb->splashDamage  = 0; //400;
+		bomb->splashRadius	= 0;//400;
+		// RTCWPro - end
 		bomb->classname             = "air strike";
-		bomb->splashRadius          = 400;
 		bomb->methodOfDeath         = MOD_AIRSTRIKE;
 		bomb->splashMethodOfDeath   = MOD_AIRSTRIKE;
 		bomb->clipmask = MASK_MISSILESHOT;
@@ -788,6 +932,10 @@ void weapon_callAirStrike( gentity_t *ent ) {
 
 		// move pos for next bomb
 		VectorAdd( pos,bombaxis,pos );
+
+		// RtcwPro - Stats
+		if (g_gamestate.integer == GS_PLAYING)
+			ent->parent->client->sess.aWeaponStats[WS_AIRSTRIKE].atts++;
 	}
 }
 
@@ -941,8 +1089,8 @@ void Weapon_Artillery( gentity_t *ent ) {
 				bomb->r.svFlags     = SVF_USE_CURRENT_ORIGIN | SVF_BROADCAST;
 				bomb->classname = "props_explosion"; // was "air strike"
 				bomb->damage        = 0; // maybe should un-hard-code these?
-				bomb->splashDamage  = 90;
-				bomb->splashRadius  = 50;
+				bomb->splashDamage  = 0; // RtcwPro no damage for prop explosion
+				bomb->splashRadius  = 0; // RtcwPro no damage for prop explosion
 //		bomb->s.weapon	= WP_SMOKE_GRENADE;
 				// TTimo ambiguous else
 				if ( ent->client != NULL ) { // set team color on smoke
@@ -957,11 +1105,11 @@ void Weapon_Artillery( gentity_t *ent ) {
 				bomb->nextthink = level.time + 8950 + 2000 * i + crandom() * 800;
 				bomb->classname = "air strike";
 				bomb->damage        = 0;
-				bomb->splashDamage  = 400;
-				bomb->splashRadius  = 400;
+				bomb->splashDamage  = 0; // RtcwPro no damage until airstrikeexplode is called
+				bomb->splashRadius  = 0; // RtcwPro no damage until airstrikeexplode is called
 			}
-			bomb->methodOfDeath         = MOD_AIRSTRIKE;
-			bomb->splashMethodOfDeath   = MOD_AIRSTRIKE;
+			bomb->methodOfDeath         = MOD_ARTILLERY; // RtcwPro changed from MOD_AIRSTRIKE
+			bomb->splashMethodOfDeath   = MOD_ARTILLERY; // RtcwPro changed from MOD_AIRSTRIKE
 			bomb->clipmask = MASK_MISSILESHOT;
 			bomb->s.pos.trType = TR_STATIONARY; // was TR_GRAVITY,  might wanna go back to this and drop from height
 			bomb->s.pos.trTime = level.time;        // move a bit on the very first frame
@@ -1011,7 +1159,9 @@ void Weapon_Artillery( gentity_t *ent ) {
 		}
 		ent->client->ps.classWeaponTime = level.time;
 	}
-
+	// RtcwPro - OSP Stats
+	if ( g_gamestate.integer == GS_PLAYING )
+		ent->client->sess.aWeaponStats[WS_ARTILLERY].atts++;
 }
 
 gentity_t *LaunchItem( gitem_t *item, vec3_t origin, vec3_t velocity, int ownerNum );
@@ -1542,6 +1692,236 @@ void SniperSoundEFX( vec3_t pos ) {
 	G_TempEntity( pos, EV_SNIPER_SOUND );
 }
 
+// RTCWPro - begin head stuff
+qboolean IsHeadshotWeapon(int mod)
+{
+	// players are allowed headshots from these weapons
+	if (mod == MOD_LUGER ||
+		mod == MOD_COLT ||
+		mod == MOD_AKIMBO ||	//----(SA)	added
+		mod == MOD_MP40 ||
+		mod == MOD_THOMPSON ||
+		mod == MOD_STEN ||
+		mod == MOD_BAR ||
+		mod == MOD_FG42 ||
+		mod == MOD_FG42SCOPE ||
+		mod == MOD_MAUSER ||
+		mod == MOD_GARAND || // JPW NERVE this was left out
+		mod == MOD_SNIPERRIFLE ||
+		mod == MOD_SNOOPERSCOPE ||
+		mod == MOD_SILENCER ||	//----(SA)	modified
+		mod == MOD_SNIPERRIFLE)
+	{
+		return qtrue;
+	}
+
+	return qfalse;
+}
+
+qboolean IsHeadshot(gentity_t* targ, gentity_t** head, vec3_t start, vec3_t dir, int mod)
+{
+	trace_t		tr;
+	vec3_t		new_end;
+	gentity_t* traceEnt;
+
+	if (!head || !targ || !targ->client || targ->health <= 0)
+	{
+		return qfalse;
+	}
+
+	if (IsHeadshotWeapon(mod))
+	{
+		if (*head)
+		{
+			return qtrue;
+		}
+
+		*head = targ->head;
+
+		// trace another shot to see if we hit the head
+		VectorMA(start, 64, dir, new_end);
+		// NOTE(nobo): this second trace _completely_ ignores the random aim spread.
+		// Which results in more headshots than it should.. but this is what the previous
+		// 1.0 code did and the current 1.4 OSP code does as well, so it's what players are used to.
+		// and who doesn't like a couple extra headshots here and there? ;)
+		trap_Trace(&tr, start, NULL, NULL, new_end, targ->s.number, MASK_SHOT);
+
+		traceEnt = &g_entities[tr.entityNum];
+
+		if (traceEnt->is_head && traceEnt->parent == targ)
+		{
+			level.totalHeadshots++;			// NERVE - SMF
+			return qtrue;
+		}
+
+		level.missedHeadshots++;	// NERVE - SMF
+	}
+
+	return qfalse;
+}
+
+void AddHeadEntity(gentity_t* ent)
+{
+	if (ent->head)
+	{
+		return;
+	}
+
+	ent->head = G_Spawn();
+	ent->head->parent = ent;
+	ent->head->is_head = qtrue;
+}
+
+void UpdateHeadEntity(gentity_t* ent)
+{
+	gentity_t* head;
+	orientation_t or ;
+
+	if (!ent || !ent->client || ent->health <= 0 ||
+		ent->client->ps.pm_type == PM_DEAD || (ent->client->ps.pm_flags & PMF_LIMBO))
+	{
+		return;
+	}
+
+	AddHeadEntity(ent);
+	head = ent->head;
+
+	if (g_preciseHeadHitBox.integer && trap_GetTag(ent, &ent->client->animationInfo, "tag_head", &or )) {
+		G_SetOrigin(head, or .origin);
+		VectorCopy(ent->r.currentAngles, head->s.angles);
+		VectorCopy(head->s.angles, head->s.apos.trBase);
+		VectorSet(head->r.mins, -6, -6, -2); // JPW NERVE changed this z from -12 to -6 for crouching, also removed standing offset
+		VectorSet(head->r.maxs, 6, 6, 10); // changed this z from 0 to 6
+		head->clipmask = CONTENTS_SOLID;
+		head->r.contents = CONTENTS_SOLID;
+		trap_LinkEntity(head);
+		return;
+	}
+
+	float height, dest, upscale, forwardscale, rightscale;
+	vec3_t v, angles, forward2, right2, up2;
+
+	G_SetOrigin(head, ent->r.currentOrigin);
+
+	if (ent->client->ps.pm_flags & PMF_DUCKED)	// closer fake offset for 'head' box when crouching
+	{
+		height = ent->client->ps.crouchViewHeight - 12;
+	}
+	else
+	{
+		height = ent->client->ps.viewheight;
+	}
+
+	// NERVE - SMF - this matches more closely with WolfMP models
+	VectorCopy(ent->client->ps.viewangles, angles);
+	if (angles[PITCH] > 180)
+	{
+		dest = (-360 + angles[PITCH]) * 0.95;
+	}
+	else
+	{
+		dest = angles[PITCH] * 0.95;
+	}
+	angles[PITCH] = dest;
+
+	if (abs(dest) > 60)
+	{
+		upscale = 22;
+	}
+	else
+	{
+		upscale = 18;
+	}
+
+	if (ent->client->ps.weapon == WP_KNIFE ||
+		ent->client->ps.weapon == WP_MEDIC_SYRINGE)
+	{
+		forwardscale = 10;
+		rightscale = -3;
+	}
+	else
+	{
+		forwardscale = 5;
+		rightscale = 3;
+	}
+
+	AngleVectors(angles, forward2, right2, up2);
+	VectorScale(forward2, forwardscale, v);
+	VectorMA(v, rightscale, right2, v);
+	VectorMA(v, upscale, up2, v);
+
+	VectorAdd(v, head->r.currentOrigin, head->r.currentOrigin);
+	head->r.currentOrigin[2] += height / 2;
+	// -NERVE - SMF
+
+	VectorCopy(head->r.currentOrigin, head->s.origin);
+	VectorCopy(ent->r.currentAngles, head->s.angles);
+	VectorCopy(head->s.angles, head->s.apos.trBase);
+	VectorCopy(head->s.angles, head->s.apos.trDelta);
+	VectorSet(head->r.mins, -6, -6, -2); // JPW NERVE changed this z from -12 to -6 for crouching, also removed standing offset
+	VectorSet(head->r.maxs, 6, 6, 10); // changed this z from 0 to 6
+	head->clipmask = CONTENTS_SOLID;
+	head->r.contents = CONTENTS_SOLID;
+
+	trap_LinkEntity(head);
+}
+
+void UpdateHeadEntities(gentity_t* skip)
+{
+	int i;
+	gentity_t* potential_targ;
+
+	for (i = 0; i < level.numPlayingClients; ++i)
+	{
+		potential_targ = g_entities + level.sortedClients[i];
+
+		if (potential_targ == skip)
+		{
+			continue;
+		}
+
+		UpdateHeadEntity(potential_targ);
+	}
+}
+
+void FreeHeadEntity(gentity_t* ent)
+{
+	if (ent && ent->client && ent->head)
+	{
+		G_FreeEntity(ent->head);
+		ent->head = NULL;
+	}
+}
+
+void RemoveHeadEntity(gentity_t* ent)
+{
+	if (ent && ent->client && ent->head)
+	{
+		if (ent->head->r.linked)
+		{
+			trap_UnlinkEntity(ent->head);
+		}
+	}
+}
+
+void RemoveHeadEntities(gentity_t* skip)
+{
+	int i;
+	gentity_t* potential_targ;
+
+	for (i = 0; i < level.numPlayingClients; ++i)
+	{
+		potential_targ = g_entities + level.sortedClients[i];
+
+		if (potential_targ == skip)
+		{
+			continue;
+		}
+
+		RemoveHeadEntity(potential_targ);
+	}
+}
+// RTCWPro - head stuff end
 
 /*
 ==============
@@ -1587,10 +1967,65 @@ Bullet_Fire
 void Bullet_Fire( gentity_t *ent, float spread, int damage ) {
 	vec3_t end;
 
-	Bullet_Endpos( ent, spread, &end );
-	Bullet_Fire_Extended( ent, ent, muzzleTrace, end, spread, damage );
+	if (g_disableInv.integer)
+	{
+		ent->client->ps.powerups[PW_INVULNERABLE] = 0;
+	}
+
+	if (ent->client)
+	{
+		// antilag lerp if enough delay between client and server.
+		// RTCWPro added cg_antilag client check (RtCW pub port)
+		if (g_antilag.integer && (ent->client->pers.antilag) && !(ent->r.svFlags & SVF_BOT))
+		{
+			G_TimeShiftAllClients(ent->client->pers.cmd.serverTime, ent);
+		}
+
+		// update head entitiy positions and link them into the world (for headshots).
+		UpdateHeadEntities(ent);
+	}
+
+	Bullet_Endpos(ent, spread, &end);
+	Bullet_Fire_Extended(ent, ent, muzzleTrace, end, spread, damage);
+
+	if (ent->client)
+	{
+		// restore all client positions to before the antilag lerp.
+		// RTCWPro added cg_antilag client check (RtCW pub port)
+		if (g_antilag.integer && (ent->client->pers.antilag) && !(ent->r.svFlags & SVF_BOT))
+		{
+			G_UnTimeShiftAllClients(ent);
+		}
+
+		// unlink all head entities so they don't collide with players.
+		RemoveHeadEntities(ent);
+	}
 }
 
+qboolean LogAccuracyShot(gentity_t* target, gentity_t* attacker) {
+	if (attacker && attacker->client)
+	{
+		if (target && target->client)
+		{
+			if (target->client->ps.stats[STAT_HEALTH] > 0 || (OnSameTeam(attacker, target)))
+			{
+				if ((target->client->ps.powerups[PW_INVULNERABLE] <= level.time))
+				{
+					return qtrue;
+				}
+			}
+		}
+		else
+		{
+			if (!target || !target->takedamage)
+			{
+				return qtrue;
+			}
+		}
+	}
+
+	return qfalse;
+}
 
 /*
 ==============
@@ -1603,17 +2038,35 @@ Bullet_Fire_Extended
 */
 void Bullet_Fire_Extended( gentity_t *source, gentity_t *attacker, vec3_t start, vec3_t end, float spread, int damage ) {
 	trace_t tr;
+	vec3_t		initial_start;
 	gentity_t   *tent;
 	gentity_t   *traceEnt;
+	gentity_t* head = NULL;
+
+	// since start is overwritten halfway through this function.
+	VectorCopy(start, initial_start);
 
 	damage *= s_quadFactor;
 
-	G_HistoricalTrace( source, &tr, start, NULL, NULL, end, source->s.number, MASK_SHOT );
+	trap_Trace(&tr, start, NULL, NULL, end, source->s.number, MASK_SHOT);
+	//G_HistoricalTrace( source, &tr, start, NULL, NULL, end, source->s.number, MASK_SHOT );
+
+	traceEnt = &g_entities[tr.entityNum];
+
+	if (traceEnt->is_head) {
+		head = traceEnt;
+		traceEnt = head->parent;
+	}
+
+	if (LogAccuracyShot(traceEnt, source) && g_gamestate.integer == GS_PLAYING)
+	{
+		source->client->pers.life_acc_shots++;
+		source->client->sess.acc_shots++;
+	}
 
 	// DHM - Nerve :: only in single player
-	if ( g_gametype.integer == GT_SINGLE_PLAYER ) {
+	if (g_gametype.integer == GT_SINGLE_PLAYER)
 		AICast_ProcessBullet( attacker, start, tr.endpos );
-	}
 
 	// bullet debugging using Q3A's railtrail
 	if ( g_debugBullets.integer & 1 ) {
@@ -1652,8 +2105,11 @@ void Bullet_Fire_Extended( gentity_t *source, gentity_t *attacker, vec3_t start,
 	if ( traceEnt->takedamage && traceEnt->client && !( traceEnt->flags & FL_DEFENSE_GUARD ) ) {
 		tent = G_TempEntity( tr.endpos, EV_BULLET_HIT_FLESH );
 		tent->s.eventParm = traceEnt->s.number;
-		if ( LogAccuracyHit( traceEnt, attacker ) ) {
+		if (LogAccuracyHit(traceEnt, attacker) && g_gamestate.integer == GS_PLAYING) {
 			attacker->client->ps.persistant[PERS_ACCURACY_HITS]++;
+			// RtcwPro - Stats
+			attacker->client->pers.life_acc_hits++;
+			attacker->client->sess.acc_hits++;
 		}
 
 //----(SA)	added
@@ -1667,6 +2123,7 @@ void Bullet_Fire_Extended( gentity_t *source, gentity_t *attacker, vec3_t start,
 			bboxEnt = G_TempEntity( b1, EV_RAILTRAIL );
 			VectorCopy( b2, bboxEnt->s.origin2 );
 			bboxEnt->s.dmgFlags = 1;    // ("type")
+			bboxEnt->s.otherEntityNum2 = attacker->s.number;
 		}
 //----(SA)	end
 
@@ -1678,7 +2135,7 @@ void Bullet_Fire_Extended( gentity_t *source, gentity_t *attacker, vec3_t start,
 		vec3_t reflect;
 		float dot;
 
-		if ( g_debugBullets.integer <= -2 ) {  // show hit thing bb
+		if (g_debugBullets.integer >= 4) {	// show hit thing bb
 			gentity_t *bboxEnt;
 			vec3_t b1, b2;
 			VectorCopy( traceEnt->r.currentOrigin, b1 );
@@ -1688,6 +2145,7 @@ void Bullet_Fire_Extended( gentity_t *source, gentity_t *attacker, vec3_t start,
 			bboxEnt = G_TempEntity( b1, EV_RAILTRAIL );
 			VectorCopy( b2, bboxEnt->s.origin2 );
 			bboxEnt->s.dmgFlags = 1;    // ("type")
+			bboxEnt->s.otherEntityNum2 = attacker->s.number;
 		}
 
 		if ( traceEnt->flags & FL_DEFENSE_GUARD ) {
@@ -1740,6 +2198,8 @@ void Bullet_Fire_Extended( gentity_t *source, gentity_t *attacker, vec3_t start,
 //----(SA)	end
 
 		} else {
+			vec3_t backwards;
+			
 			// Ridah, don't hurt team-mates
 			// DHM - Nerve :: Only in single player
 			if ( attacker->client && traceEnt->client && g_gametype.integer == GT_SINGLE_PLAYER && ( traceEnt->r.svFlags & SVF_CASTAI ) && ( attacker->r.svFlags & SVF_CASTAI ) && AICast_SameTeam( AICast_GetCastState( attacker->s.number ), traceEnt->s.number ) ) {
@@ -1748,7 +2208,28 @@ void Bullet_Fire_Extended( gentity_t *source, gentity_t *attacker, vec3_t start,
 			}
 			// done.
 
-			G_Damage( traceEnt, attacker, attacker, forward, tr.endpos, damage, 0, ammoTable[attacker->s.weapon].mod );
+			VectorSubtract(initial_start, tr.endpos, backwards);
+			VectorNormalize(backwards);
+			VectorMA(tr.endpos, 1, backwards, initial_start);
+			traceEnt->headshot = IsHeadshot(traceEnt, &head, initial_start, forward, ammoTable[attacker->s.weapon].mod);
+
+			if (head && g_debugBullets.integer >= 3) // show hit player head bb
+			{
+				gentity_t* bboxEnt;
+				vec3_t b1, b2;
+				VectorCopy(head->r.currentOrigin, b1);
+				VectorCopy(head->r.currentOrigin, b2);
+				VectorAdd(b1, head->r.mins, b1);
+				VectorAdd(b2, head->r.maxs, b2);
+				bboxEnt = G_TempEntity(b1, EV_RAILTRAIL);
+				VectorCopy(b2, bboxEnt->s.origin2);
+				bboxEnt->s.dmgFlags = 1;
+				bboxEnt->s.otherEntityNum2 = attacker->s.number;
+			}
+
+			G_Damage(traceEnt, attacker, attacker, forward, tr.endpos, damage, 0, ammoTable[attacker->s.weapon].mod);
+
+			traceEnt->headshot = qfalse;
 
 			// allow bullets to "pass through" func_explosives if they break by taking another simultanious shot
 			if ( Q_stricmp( traceEnt->classname, "func_explosive" ) == 0 ) {
@@ -1871,7 +2352,7 @@ gentity_t *weapon_grenadelauncher_fire( gentity_t *ent, int grenType ) {
 
 		te = G_TempEntity( m->s.pos.trBase, EV_GLOBAL_SOUND );
 		te->s.eventParm = G_SoundIndex( "sound/multiplayer/airstrike_01.wav" );
-		te->r.svFlags |= SVF_BROADCAST | SVF_USE_CURRENT_ORIGIN;
+		te->r.svFlags |= SVF_BROADCAST; // | SVF_USE_CURRENT_ORIGIN;
 	}
 	// jpw
 
@@ -1927,6 +2408,7 @@ void VenomPattern( vec3_t origin, vec3_t origin2, int seed, gentity_t *ent ) {
 	float r, u;
 	vec3_t end;
 	vec3_t forward, right, up;
+	
 	qboolean hitClient = qfalse;
 
 	// derive the right and up vectors from the forward vector, because
@@ -1934,6 +2416,21 @@ void VenomPattern( vec3_t origin, vec3_t origin2, int seed, gentity_t *ent ) {
 	VectorNormalize2( origin2, forward );
 	PerpendicularVector( right, forward );
 	CrossProduct( forward, right, up );
+
+	// RTCWPro - leaving this intact
+
+	// L0 Antilag
+    if ( g_antilag.integer && ent->client &&
+        !(ent->r.svFlags & SVF_BOT) ) {
+        G_TimeShiftAllClients( ent->client->pers.cmd.serverTime, ent );
+    } // end
+
+
+
+	// L0 - disable invincible time when player spawns and starts shooting
+	if (g_disableInv.integer)
+		ent->client->ps.powerups[PW_INVULNERABLE] = 0;
+	// end
 
 	// generate the "random" spread pattern
 	for ( i = 0 ; i < DEFAULT_VENOM_COUNT ; i++ ) {
@@ -1946,7 +2443,15 @@ void VenomPattern( vec3_t origin, vec3_t origin2, int seed, gentity_t *ent ) {
 			hitClient = qtrue;
 			ent->client->ps.persistant[PERS_ACCURACY_HITS]++;
 		}
+
 	}
+
+
+	// L0 - Antilag
+    if ( g_antilag.integer && ent->client &&
+        !(ent->r.svFlags & SVF_BOT) ) {
+        G_UnTimeShiftAllClients( ent );
+    } // end
 }
 
 /*
@@ -2039,6 +2544,10 @@ void Weapon_RocketLauncher_Fire( gentity_t *ent ) {
 	m->damage *= s_quadFactor;
 	m->splashDamage *= s_quadFactor;
 
+	if (g_gamestate.integer == GS_PLAYING) {  // add panzer attempts to accuracy
+		ent->client->pers.life_acc_shots++;
+		ent->client->sess.acc_shots++;
+	}
 //	VectorAdd( m->s.pos.trDelta, ent->client->ps.velocity, m->s.pos.trDelta );	// "real" physics
 }
 
@@ -2104,6 +2613,12 @@ void Weapon_FlamethrowerFire( gentity_t *ent ) {
 	vec3_t trace_end;
 	trace_t trace;
 
+
+//S4NDM4NN - old code is sv_fps dependant and inside of fire_flamechunk stop it here instead and only spawn 1 every 100ms instead
+	if(ent->count2 > level.time)
+		return;
+	ent->count2 = level.time + 100;
+
 	VectorCopy( ent->r.currentOrigin, start );
 	start[2] += ent->client->ps.viewheight;
 	VectorCopy( start, trace_start );
@@ -2157,6 +2672,12 @@ LogAccuracyHit
 ===============
 */
 qboolean LogAccuracyHit( gentity_t *target, gentity_t *attacker ) {
+
+	// RTCWPro - patched
+	if (!LogAccuracyShot(target, attacker)) {
+		return qfalse;
+	}
+
 	if ( !target->takedamage ) {
 		return qfalse;
 	}
@@ -2301,6 +2822,7 @@ FireWeapon
 void FireWeapon( gentity_t *ent ) {
 	float aimSpreadScale;
 	vec3_t viewang;  // JPW NERVE
+	int shots = 1;	 // RtcwPro - OSP Stats
 
 	// Rafael mg42
 	if ( ent->client->ps.persistant[PERS_HWEAPON_USE] && ent->active ) {
@@ -2454,6 +2976,9 @@ void FireWeapon( gentity_t *ent ) {
 	default:
 		break;
 	}
+	// RtcwPro - OSP Stats
+	if ( g_gamestate.integer == GS_PLAYING )
+		ent->client->sess.aWeaponStats[BG_WeapStatForWeapon( ent->s.weapon )].atts += shots;
 }
 
 

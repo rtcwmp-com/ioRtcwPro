@@ -1154,14 +1154,14 @@ int AIChar_GetPainLocation( gentity_t *ent, vec3_t point ) {
 	orientation_t or;
 
 	// first make sure the client is able to retrieve tag information
-	if ( !trap_GetTag( ent->s.number, painTagNames[0], &or ) ) {
+	if ( !trap_GetTag( ent->s.number, NULL, painTagNames[0], &or ) ) {
 		return 0;
 	}
 
 	// find a correct animation to play, based on the body orientation at previous frame
 	for ( tagIndex = 0, bestDist = 0, bestTag = -1; painTagNames[tagIndex]; tagIndex++ ) {
 		// grab the tag with this name
-		if ( trap_GetTag( ent->s.number, painTagNames[tagIndex], &or ) ) {
+		if ( trap_GetTag( ent->s.number, NULL, painTagNames[tagIndex], &or ) ) {
 			dist = VectorDistance( or.origin, point );
 			if ( !bestDist || dist < bestDist ) {
 				bestTag = tagIndex;

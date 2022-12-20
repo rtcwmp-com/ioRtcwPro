@@ -250,7 +250,7 @@ qboolean G_FilterMaxLivesPacket( char *from ) {
 AddIP
 =================
 */
-static void AddIP( char *str ) {
+void AddIP( char *str ) {
 	int i;
 
 	for ( i = 0 ; i < numIPFilters ; i++ )
@@ -271,7 +271,12 @@ static void AddIP( char *str ) {
 
 	UpdateIPBans();
 }
-
+//void AddIPBan(const char *str) {
+//	AddIP(&ipFilters, str);
+//}
+//void AddMaxLivesBan( const char *str ) {
+//	AddIP( &ipMaxLivesFilters, str );
+//}
 /*
 =================
 AddMaxLivesGUID
@@ -467,6 +472,16 @@ gclient_t   *ClientForString( const char *s ) {
 	gclient_t   *cl;
 	int i;
 	int idnum;
+	// check for a name match
+	for ( i = 0 ; i < level.maxclients ; i++ ) {
+		cl = &level.clients[i];
+		if ( cl->pers.connected == CON_DISCONNECTED ) {
+			continue;
+		}
+		if ( !Q_stricmp( cl->pers.netname, s ) ) {
+			return cl;
+		}
+	}
 
 	// numeric values are just slot numbers
 	if ( s[0] >= '0' && s[0] <= '9' ) {
@@ -484,18 +499,96 @@ gclient_t   *ClientForString( const char *s ) {
 		return cl;
 	}
 
+	G_Printf( "User %s is not on the server\n", s );
 	// check for a name match
-	for ( i = 0 ; i < level.maxclients ; i++ ) {
+	return NULL;
+}
+
+static qboolean G_Is_SV_Running( void ) {
+
+	char cvar[MAX_TOKEN_CHARS];
+
+	trap_Cvar_VariableStringBuffer( "sv_running", cvar, sizeof( cvar ) );
+	return (qboolean)atoi( cvar );
+}
+
+/*
+==================
+G_GetPlayerByNum
+==================
+*/
+gclient_t   *G_GetPlayerByNum( int clientNum ) {
+	gclient_t   *cl;
+
+
+	// make sure server is running
+	if ( !G_Is_SV_Running() ) {
+		return NULL;
+	}
+
+	if ( trap_Argc() < 2 ) {
+		G_Printf( "No player specified.\n" );
+		return NULL;
+	}
+
+	if ( clientNum < 0 || clientNum >= level.maxclients ) {
+		Com_Printf( "Bad client slot: %i\n", clientNum );
+		return NULL;
+	}
+
+	cl = &level.clients[clientNum];
+	if ( cl->pers.connected == CON_DISCONNECTED ) {
+		G_Printf( "Client %i is not connected\n", clientNum );
+		return NULL;
+	}
+
+	if ( cl ) {
+		return cl;
+	}
+
+
+	G_Printf( "User %d is not on the server\n", clientNum );
+
+	return NULL;
+}
+
+/*
+==================
+G_GetPlayerByName
+==================
+*/
+gclient_t *G_GetPlayerByName( char *name ) {
+
+	int i;
+	gclient_t   *cl;
+	char cleanName[64];
+
+	// make sure server is running
+	if ( !G_Is_SV_Running() ) {
+		return NULL;
+	}
+
+	if ( trap_Argc() < 2 ) {
+		G_Printf( "No player specified.\n" );
+		return NULL;
+	}
+
+	for ( i = 0; i < level.numConnectedClients; i++ ) {
+
 		cl = &level.clients[i];
-		if ( cl->pers.connected == CON_DISCONNECTED ) {
-			continue;
+
+		if ( !Q_stricmp( cl->pers.netname, name ) ) {
+			return cl;
 		}
-		if ( !Q_stricmp( cl->pers.netname, s ) ) {
+
+		Q_strncpyz( cleanName, cl->pers.netname, sizeof( cleanName ) );
+		Q_CleanStr( cleanName );
+		if ( !Q_stricmp( cleanName, name ) ) {
 			return cl;
 		}
 	}
 
-	G_Printf( "User %s is not on the server\n", s );
+	G_Printf( "Player %s is not on the server\n", name );
 
 	return NULL;
 }
@@ -525,7 +618,7 @@ void    Svcmd_ForceTeam_f( void ) {
 
 	// set the team
 	trap_Argv( 2, str, sizeof( str ) );
-	SetTeam( &g_entities[cl - level.clients], str );
+	SetTeam( &g_entities[cl - level.clients], str ,qfalse);
 }
 
 /*
@@ -536,11 +629,15 @@ NERVE - SMF - starts match if in tournament mode
 ============
 */
 void Svcmd_StartMatch_f( void ) {
-	if ( !g_noTeamSwitching.integer ) {
+/*	if ( !g_noTeamSwitching.integer ) {
 		trap_SendServerCommand( -1, va( "print \"g_noTeamSwitching not activated.\n\"" ) );
 		return;
 	}
+*/
 
+	G_refAllReady_cmd( NULL );
+
+/*
 	if ( level.numPlayingClients <= 1 ) {
 		trap_SendServerCommand( -1, va( "print \"Not enough playing clients to start match.\n\"" ) );
 		return;
@@ -554,6 +651,7 @@ void Svcmd_StartMatch_f( void ) {
 	if ( g_gamestate.integer == GS_WAITING_FOR_PLAYERS ) {
 		trap_SendConsoleCommand( EXEC_APPEND, va( "map_restart 0 %i\n", GS_WARMUP ) );
 	}
+	*/
 }
 
 /*
@@ -566,17 +664,66 @@ NERVE - SMF - this has three behaviors
 - if in stopwatch mode, reset back to first round
 ============
 */
-void Svcmd_ResetMatch_f( void ) {
-	if ( g_gametype.integer == GT_WOLF_STOPWATCH ) {
-		trap_Cvar_Set( "g_currentRound", "0" );
-		trap_Cvar_Set( "g_nextTimeLimit", "0" );
+void Svcmd_ResetMatch_f(qboolean fDoReset, qboolean fDoRestart) {
+	int i;
+	gclient_t *cl;
+    char *buf;
+    char cs[MAX_STRING_CHARS];
+	for (i = 0; i < level.numConnectedClients; i++) {
+		g_entities[level.sortedClients[i]].client->pers.ready = qfalse;
+		//g_entities[level.sortedClients[i]].client->ps.persistant[PERS_RESTRICTEDWEAPON] = WP_NONE; // reset weapon restrictions on restart
+	}
+	// reset all the weapon restrictions so next time the players spawn they get set correctly
+	level.alliedFlamer = level.axisFlamer = 0;
+	level.alliedSniper = level.axisSniper = 0;
+	level.alliedPF = level.axisPF = 0;
+	level.alliedVenom = level.axisVenom = 0;
+
+    if (g_gamestate.integer == GS_PLAYING && g_gameStatslog.integer) {
+        //G_writeGameEarlyExit();  // properly close current stats output
+        // fix stats for when map restarts occur
+        if (!fDoReset && fDoRestart  && g_gametype.integer == GT_WOLF_STOPWATCH) {
+            if (g_currentRound.integer == 1) {
+			    /*
+			    trap_GetConfigstring(CS_ROUNDINFO, cs, sizeof(cs));  // retrieve round/match info saved
+        		buf = Info_ValueForKey(cs, "matchid");
+        		*/
+                trap_Cvar_Set("g_swapteams", "1");  // horrible fix for the swapping of teams on mid-round 2 maprestarts
+
+                for ( i = 0; i < level.numPlayingClients; i++ ) {
+                    cl = level.clients + level.sortedClients[i];
+                    if ( cl->pers.connected != CON_CONNECTED) {
+                        continue;
+                    }
+                    cl->sess.rounds--; // don't count the half played game as a round...
+
+                }
+            }
+            else {
+                level.fResetStats = qtrue;
+            }
+        }
+    }
+
+	if (fDoReset) {
+		G_resetRoundState();
+		G_resetModeState();
 	}
 
-	if ( !g_noTeamSwitching.integer || ( g_minGameClients.integer > 1 && level.numPlayingClients >= g_minGameClients.integer ) ) {
-		trap_SendConsoleCommand( EXEC_APPEND, va( "map_restart 0 %i\n", GS_WARMUP ) );
+
+
+	if ((fDoRestart && !g_noTeamSwitching.integer) || (g_minGameClients.integer > 1 && level.numPlayingClients >= g_minGameClients.integer)) {
+		trap_SendConsoleCommand(EXEC_APPEND, va("map_restart 0 %i\n", GS_WARMUP));
 		return;
-	} else {
-		trap_SendConsoleCommand( EXEC_APPEND, va( "map_restart 0 %i\n", GS_WAITING_FOR_PLAYERS ) );
+	}
+	else { // L0 - Tournament..
+		if (g_tournament.integer) {
+			trap_SendConsoleCommand(EXEC_APPEND, va("map_restart 0 %i\n", GS_WARMUP));
+			trap_SetConfigstring(CS_READY, va("%i", READY_PENDING));
+		}
+		else {
+			trap_SendConsoleCommand(EXEC_APPEND, va("map_restart 0 %i\n", GS_WAITING_FOR_PLAYERS));
+		}
 		return;
 	}
 }
@@ -590,10 +737,12 @@ NERVE - SMF - swaps all clients to opposite team
 */
 void Svcmd_SwapTeams_f( void ) {
 //  if ( g_gamestate.integer != GS_PLAYING ) {
-	if ( ( g_gamestate.integer == GS_INITIALIZE ) || // JPW NERVE -- so teams can swap between checkpoint rounds
-		 ( g_gamestate.integer == GS_WAITING_FOR_PLAYERS ) ||
-		 ( g_gamestate.integer == GS_RESET ) ) {
-		trap_SendServerCommand( -1, va( "print \"Match must be in progress to swap teams.\n\"" ) );
+	if ((g_gamestate.integer == GS_INITIALIZE) ||
+	    (g_gamestate.integer == GS_WARMUP) ||
+	    ( g_gamestate.integer == GS_WAITING_FOR_PLAYERS ) ||
+	    (g_gamestate.integer == GS_RESET))
+	{
+		G_swapTeams();
 		return;
 	}
 
@@ -602,11 +751,200 @@ void Svcmd_SwapTeams_f( void ) {
 		trap_Cvar_Set( "g_nextTimeLimit", "0" );
 	}
 
+    if (g_gamestate.integer == GS_PLAYING && g_gameStatslog.integer) {
+        //G_writeGameEarlyExit();  // properly close current stats output
+    }
 	trap_Cvar_Set( "g_swapteams", "1" );
+
 	trap_SendConsoleCommand( EXEC_APPEND, va( "map_restart 0 %i\n", GS_WARMUP ) );
 }
 
 char    *ConcatArgs( int start );
+/*
+===========
+RtcwPro - Shuffle
+===========
+*/
+void Svcmd_Shuffle_f( void )
+{
+	int count=0, tmpCount, i;
+	int players[MAX_CLIENTS];
+
+	memset(players, -1, sizeof(players));
+
+	if (g_gamestate.integer == GS_RESET)
+	return;
+
+	for (i = 0; i < MAX_CLIENTS; i++)
+	{
+		//skip client numbers that aren't used
+		if ((!g_entities[i].inuse) || (level.clients[i].pers.connected != CON_CONNECTED))
+			continue;
+
+		//ignore spectators
+		if ((level.clients[i].sess.sessionTeam != TEAM_RED) && (level.clients[i].sess.sessionTeam != TEAM_BLUE))
+			continue;
+
+		players[count] = i;
+		count++;
+	}
+
+	tmpCount = count;	//copy the number of active clients
+
+	//loop through all the active players
+	for (i = 0; i < count; i++)
+	{
+		int j;
+
+		do {
+			j = (rand() % count);
+		} while (players[j] == -1);
+
+		//put every other random choice on allies
+		if (i & 1)
+			level.clients[players[j]].sess.sessionTeam = TEAM_BLUE;
+		else
+			level.clients[players[j]].sess.sessionTeam = TEAM_RED;
+
+		ClientUserinfoChanged(players[j]);
+		ClientBegin(players[j]);
+
+
+		players[j] = players[tmpCount-1];
+		players[tmpCount-1] = -1;
+		tmpCount--;
+	}
+
+	// Reset match if there's a shuffle!
+	Svcmd_ResetMatch_f( qfalse, qtrue );
+
+	AP("chat \"^zconsole:^7 Teams were shuffled^1!\n\"");
+}
+/*
+=================
+RtcwPro - Antilag
+=================
+*/
+void Svcmd_Antilag_f( void ) {
+
+	if ( g_antilag.integer != 0 ) {
+		trap_SendConsoleCommand( EXEC_APPEND, "g_antilag 0\n" );
+		AP("chat \"^zconsole:^7 Antilag has been disbled^1!\n\"");
+	} else {
+		trap_SendConsoleCommand( EXEC_APPEND, "g_antilag 1\n" );
+		AP("chat \"^zconsole:^7 Antilag has been enabled^2!\n\"");
+	}
+}
+
+/*
+====================
+Svcmd_ShuffleTeams_f
+
+RtcwPro - randomly places players on teams
+====================
+*/
+void Svcmd_ShuffleTeams_f(void) {
+	G_resetRoundState();
+	G_shuffleTeams();
+
+	if ((g_gamestate.integer == GS_INITIALIZE) ||
+		(g_gamestate.integer == GS_WARMUP) ||
+		(g_gamestate.integer == GS_RESET)) {
+		return;
+	}
+
+	G_resetModeState();
+	Svcmd_ResetMatch_f(qfalse, qtrue);
+}
+
+/*
+=================
+RtcwPro - Pause/Unpause
+=================
+*/
+void Svcmd_Pause_f(qboolean pause) {
+
+	if (pause) {
+		G_handlePause(qtrue, 0);
+		AP(va("cp \"Match has been ^3Paused^7!\n\"2"));
+	} else {
+		G_handlePause(qfalse, 0);
+		AP(va("cp \"Resuming the match..\n\"2"));
+	}
+}
+
+/*
+===========
+RTCWPro
+Requests Screenshot from client
+===========
+*/
+void Svcmd_RequestSS_f(void) {
+	char client_arg[256];
+	int	clientNum;
+	gentity_t* targetent;
+	char* datetime;
+	char cleanName[16];
+	char guid[64];
+
+	if (!G_Is_SV_Running())
+	{
+		Com_Printf("Server is not running.\n");
+		return;
+	}
+
+	if (!strlen(g_ssAddress.string) || (!Q_stricmp(g_ssAddress.string, "none")))
+	{
+		G_Printf("g_ssAddress is not set!\n");
+		return;
+	}
+
+	if (!strlen(g_ssWebhookId.string) || (!Q_stricmp(g_ssWebhookId.string, "none")))
+	{
+		G_Printf("g_ssWebhookId is not set!\n");
+		return;
+	}
+
+	if (!strlen(g_ssWebhookToken.string) || (!Q_stricmp(g_ssWebhookToken.string, "none")))
+	{
+		G_Printf("g_ssWebhookToken is not set!\n");
+		return;
+	}
+
+	if (level.intermissiontime)
+	{
+		G_Printf("Cannot use this command during intermission!\n");
+		return;
+	}
+
+	trap_Argv(1, client_arg, sizeof(client_arg));
+
+	if (!strlen(client_arg))
+	{
+		G_Printf("Invalid client id!\n");
+		return;
+	}
+
+	clientNum = atoi(client_arg);
+	targetent = &g_entities[clientNum];
+
+	if (!targetent->client || targetent->client->pers.connected != CON_CONNECTED)
+	{
+		G_Printf("Invalid client id!\n");
+		return;
+	}
+
+	datetime = Delim_GetDateTime();
+	BG_cleanName(targetent->client->pers.netname, cleanName, 16, qfalse);
+	Q_strncpyz(guid, targetent->client->sess.guid, sizeof(guid));
+	memmove(guid, guid + 24, strlen(guid));
+	int waittime = 1;
+
+	trap_SendServerCommand(targetent - g_entities, va("reqss %s %s %s %i %s",
+		g_ssAddress.string, g_ssWebhookId.string, g_ssWebhookToken.string, waittime, datetime));
+
+	G_LogPrintf("Rcon requested %s_%s_%s.jpg from id %d\n", cleanName, datetime, guid, clientNum);
+}
 
 /*
 =================
@@ -661,29 +999,57 @@ qboolean    ConsoleCommand( void ) {
 
 
 	// NERVE - SMF
-	if ( Q_stricmp( cmd, "start_match" ) == 0 ) {
+	if ( Q_stricmp( cmd, "startmatch" ) == 0  || Q_stricmp( cmd, "start_match" ) == 0) {
 		Svcmd_StartMatch_f();
 		return qtrue;
 	}
 
-	if ( Q_stricmp( cmd, "reset_match" ) == 0 ) {
-		Svcmd_ResetMatch_f();
+	if ( Q_stricmp( cmd, "resetmatch" ) == 0  || Q_stricmp( cmd, "reset_match" ) == 0) {
+		Svcmd_ResetMatch_f(qtrue, qtrue);
 		return qtrue;
 	}
 
-	if ( Q_stricmp( cmd, "swap_teams" ) == 0 ) {
+	if ( Q_stricmp( cmd, "swapteams" ) == 0  || Q_stricmp( cmd, "swap_teams" ) == 0) {
 		Svcmd_SwapTeams_f();
 		return qtrue;
 	}
 	// -NERVE - SMF
 
+	// RtcwPro - Callvotes and server side (console) handling
+	// Shuffle
+	if ( Q_stricmp( cmd, "shuffle" ) == 0 ) {
+		Svcmd_Shuffle_f();
+		return qtrue;
+	}
+	// Antilag
+	if ( Q_stricmp( cmd, "antilag" ) == 0 ) {
+		Svcmd_Antilag_f();
+		return qtrue;
+	}
+	// Pause
+	if ( Q_stricmp( cmd, "pause" ) == 0 ) {
+		Svcmd_Pause_f(qtrue);
+		return qtrue;
+	}
+	// UnPause
+	if ( Q_stricmp( cmd, "unpause" ) == 0 ) {
+		Svcmd_Pause_f(qfalse);
+		return qtrue;
+	}
+	// reqss
+	if (Q_stricmp(cmd, "reqss") == 0) {
+		Svcmd_RequestSS_f();
+		return qtrue;
+	}
+
+	// RTCWPro
 	if ( g_dedicated.integer ) {
 		if ( Q_stricmp( cmd, "say" ) == 0 ) {
-			trap_SendServerCommand( -1, va( "print \"server:[lof] %s\"", ConcatArgs( 1 ) ) );
+			trap_SendServerCommand( -1, va( "print \"server:[lof] %s\n", ConcatArgs( 1 ) ) );
 			return qtrue;
 		}
 		// everything else will also be printed as a say command
-		trap_SendServerCommand( -1, va( "print \"server:[lof] %s\"", ConcatArgs( 0 ) ) );
+		trap_SendServerCommand( -1, va( "print \"server:[lof] %s\n", ConcatArgs( 0 ) ) );
 		return qtrue;
 	}
 

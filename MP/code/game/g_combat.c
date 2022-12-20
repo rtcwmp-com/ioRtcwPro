@@ -48,7 +48,7 @@ void AddScore( gentity_t *ent, int score ) {
 		return;
 	}
 	// no scoring during pre-match warmup
-	if ( level.warmupTime ) {
+	if (g_gamestate.integer != GS_PLAYING) {
 		return;
 	}
 
@@ -69,6 +69,26 @@ void AddScore( gentity_t *ent, int score ) {
 
 /*
 =================
+Droppable weapons and FindIndex for TossClientItems
+=================
+*/
+int droppableWeapons[] = {
+	WP_MP40, WP_THOMPSON, WP_STEN, WP_MAUSER, WP_PANZERFAUST, WP_FLAMETHROWER, WP_COLT, WP_LUGER
+};
+int FindIndex(int a[], int num_elements, int value)
+{
+	int i;
+	for (i = 0; i < num_elements; i++)
+	{
+		if (a[i] == value)
+		{
+			return(value);
+		}
+	}
+	return(-1);
+}
+
+/*
 TossClientItems
 
 Toss the weapon and powerups for the killed player
@@ -78,9 +98,15 @@ void TossClientItems( gentity_t *self ) {
 	gitem_t     *item;
 	int weapon;
 	gentity_t   *drop = 0;
+	int pclass = self->client->ps.stats[STAT_PLAYER_CLASS];
 
 	// drop the weapon if not a gauntlet or machinegun
-	weapon = self->s.weapon;
+	if (pclass != PC_MEDIC) { // RTCWPro - not for medics
+		weapon = self->s.weapon;
+	}
+	else {
+		weapon = WP_NONE;
+	}
 
 	// make a special check to see if they are changing to a new
 	// weapon that isn't the mg or gauntlet.  Without this, a client
@@ -103,7 +129,7 @@ void TossClientItems( gentity_t *self ) {
 	}
 	// jpw
 
-	if ( weapon > WP_NONE && weapon < WP_MONSTER_ATTACK1 && self->client->ps.ammo[ BG_FindAmmoForWeapon( weapon )] ) {
+	if ( weapon > WP_NONE && FindIndex(droppableWeapons, ARRAY_LEN(droppableWeapons), weapon) >= 0 && self->client->ps.ammo[ BG_FindAmmoForWeapon( weapon )] ) { // < WP_MONSTER_ATTACK1 replaced
 		// find the item type for this weapon
 		item = BG_FindItemForWeapon( weapon );
 		// spawn the item
@@ -236,6 +262,12 @@ char    *modNames[] = {
 	"MOD_MORTAR_SPLASH",
 	"MOD_KICKED",
 	"MOD_GRABBER",
+	"MOD_DYNAMITE",
+	"MOD_DYNAMITE_SPLASH",
+	"MOD_AIRSTRIKE",
+	"MOD_SYRINGE",
+	"MOD_AMMO",
+	"MOD_ARTILLERY",
 	"MOD_WATER",
 	"MOD_SLIME",
 	"MOD_LAVA",
@@ -260,8 +292,14 @@ char    *modNames[] = {
 	"MOD_LT_AIRSTRIKE",
 	"MOD_ENGINEER",  // not sure if we'll use
 	"MOD_MEDIC",     // these like this or not
+	"MOD_BAT",
 // jpw
-	"MOD_BAT"
+// RtcwPro
+	"MOD_ADMKILL",
+	"MOD_SELFKILL",
+	"MOD_SWITCHTEAM",
+	"MOD_NUM_MODS"
+// -RtcwPro
 };
 
 /*
@@ -291,6 +329,9 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		return;
 	}
 
+	// L0 - RtcwPro - death stats handled out-of-band of G_Damage for external calls
+	G_addStats( self, attacker, damage, meansOfDeath );
+	// OSP
 	self->client->ps.pm_type = PM_DEAD;
 
 	G_AddEvent( self, EV_STOPSTREAMINGSOUND, 0 );
@@ -312,16 +353,76 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		killerName = "<world>";
 	}
 
+	if ( meansOfDeath == MOD_SELFKILL && g_gamestate.integer == GS_PLAYING) {
+		int r = rand() %2; // randomize messages
+
+		if (r == 0)
+			AP(va("print \"%s ^7slit his throat.\n\"", self->client->pers.netname));
+		else if (r == 1)
+			AP(va("print \"%s ^7commited suicide.\n\"", self->client->pers.netname));
+	}
+
+	// If person gets stabbed use custom sound from soundpack
+	// it's broadcasted to victim and heard only if standing near victim...
+	if ( (meansOfDeath == MOD_KNIFE_STEALTH || meansOfDeath == MOD_KNIFE) && !OnSameTeam(self, attacker) && g_fastStabSound.integer > 0) {
+		int r = rand() %2;
+		char *snd = "goat.wav"; // default
+
+		if (r == 0 || g_fastStabSound.integer == 1)
+			snd = "goat.wav";
+		else if (r == 1 || g_fastStabSound.integer == 2)
+			snd = "humiliation.wav";
+
+		APS(va("sound/match/%s", snd));
+
+		//APRS(self, va("sound/match/%s", ((g_fastStabSound.integer == 1) ? "goat.wav" :
+		//	((g_fastStabSound.integer == 2) ? "humiliation.wav" : snd)	)));
+
+		attacker->client->sess.knifeKills++;
+		//write_RoundStats(attacker->client->pers.netname, attacker->client->pers.stats.knifeStealth, ROUND_FASTSTABS);
+	}
 	if ( meansOfDeath < 0 || meansOfDeath >= ARRAY_LEN( modNames ) ) {
 		obit = "<bad obituary>";
 	} else {
 		obit = modNames[meansOfDeath];
 	}
 
-	G_LogPrintf( "Kill: %i %i %i: %s killed %s by %s\n",
+	// RtcwPro - Don't bother in warmup etc..
+	if (g_gamestate.integer == GS_PLAYING) // this is only on server side not needed during warmup
+	{
+		G_LogPrintf( "Kill: %i %i %i: %s killed %s by %s\n",
 				 killer, self->s.number, meansOfDeath, killerName,
 				 self->client->pers.netname, obit );
+        // GameStats logging .... probably want to control this via cvar (as well as do a better job in general)
+        if (g_gameStatslog.integer) {
+            if (killer == self->s.number) {
+                 //G_writeGeneralEvent(self,self,obit,eventSuicide);
+            }
+            else if (OnSameTeam(attacker, self)) {
+                if ( attacker->client ) {
+                    //G_writeGeneralEvent(attacker,self,obit,eventTeamkill);
+                }
+            }
+            else {
+                if ( attacker->client ) {
+                    int weapID;
+                    weapID = G_weapStatIndex_MOD( meansOfDeath );
+                    //G_writeGeneralEvent(attacker,self,obit,eventKill);
+					//G_writeGeneralEvent(attacker, self, va("%s", aWeaponInfo[weapID].pszName), eventKill);
+                }
+            }
 
+        }
+	}
+	// RtcwPro - Stats
+	if (attacker && attacker->client && g_gamestate.integer == GS_PLAYING) {
+		// Life kills & death spress
+		if (!OnSameTeam(attacker, self))
+		{
+			// attacker->client->pers.spreeDeaths = 0; // Reset deaths for death spress  // nihi commented out
+			attacker->client->pers.life_kills++;		// life kills
+		} // End
+	}
 	// broadcast the death event to everyone
 	ent = G_TempEntity( self->r.currentOrigin, EV_OBITUARY );
 	ent->s.eventParm = meansOfDeath;
@@ -342,8 +443,15 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 			VectorScale( launchvel, 160, launchvel );
 			VectorCopy( self->r.currentOrigin, launchspot );
 			launchspot[2] += 40;
-			fire_grenade( self, launchspot, launchvel, self->s.weapon );
+			fire_grenade( self, launchspot, launchvel, self->s.weapon )->damage = 0;
+			self->client->ps.ammoclip[BG_FindClipForWeapon(self->s.weapon)] -= ammoTable[self->s.weapon].uses;
 
+			// RtcwPro Issue #345 Clear out empty weapon, change to next best weapon
+			if (!self->client->ps.ammoclip[BG_FindClipForWeapon(self->client->ps.weapon)])
+			{
+				// remove nade from weapon bank
+				COM_BitClear(self->client->ps.weapons, self->client->ps.weapon);
+			}
 		}
 	}
 // jpw
@@ -370,6 +478,16 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 				// jpw
 				AddScore( attacker, -1 );
 			}
+			// RtcwPro - Life stats
+			if (g_lifeStats.integer) {
+				float acc = 0.00f;
+
+				acc = (self->client->pers.life_acc_shots == 0) ?
+					0.00 : ((float)self->client->pers.life_acc_hits / (float)self->client->pers.life_acc_shots ) * 100.00f ;
+
+					CPx(self-g_entities, va("chat \"^zLast life: ^7Kills:^z%d ^7Headshots:^z%d ^7Acc:^z%2.2f\n\"",
+						self->client->pers.life_kills, self->client->pers.life_headshots, acc));
+			} // End
 		} else {
 			// JPW NERVE -- mostly added as conveneience so we can tweak from the #defines all in one place
 			if ( g_gametype.integer >= GT_WOLF ) {
@@ -380,6 +498,27 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 			}
 
 			attacker->client->lastKillTime = level.time;
+			// RtcwPro - Life stats
+			if (g_lifeStats.integer) {
+				float acc = 0.00f;
+
+				acc = (self->client->pers.life_acc_shots == 0) ?
+					0.00 : ((float)self->client->pers.life_acc_hits / (float)self->client->pers.life_acc_shots ) * 100.00f ;
+
+				// Class based..
+				/*if (self->client->ps.stats[PC_MEDIC])
+					CPx(self-g_entities, va("chat \"^3Last life: ^7Kills:^3%d ^7Hs:^3%d ^7Rev:^3%d ^7Acc:^3%2.2f ^7Killer: %s^3(%ihp)\n\"",
+						self->client->pers.life_kills, self->client->pers.life_headshots, self->client->pers.life_revives, acc, attacker->client->pers.netname, attacker->health));
+				else if (self->client->ps.stats[PC_LT])
+					CPx(self-g_entities, va("chat \"^3Last life: ^7Kills:^3%d ^7Hs:^3%d ^7AmmoGiv:^3%d ^7Acc:^3%2.2f ^7Killer: %s^3(%ihp)\n\"",
+					self->client->pers.life_kills, self->client->pers.life_headshots, self->client->pers.life_ammo, acc, attacker->client->pers.netname, attacker->health));
+				else if (self->client->ps.stats[PC_ENGINEER])
+					CPx(self-g_entities, va("chat \"^3Last life: ^7Kills:^3%d ^7Hs:^3%d ^7Gibs: ^3%d ^7Acc:^3%2.2f ^7Killer: %s^3(%ihp)\n\"",
+						self->client->pers.life_kills, self->client->pers.life_headshots, self->client->pers.life_gibs, acc, attacker->client->pers.netname, attacker->health));
+				else*/
+					CPx(self-g_entities, va("chat \"^3Last life: ^7Kills:^3%d ^7Hs:^3%d ^7Gibs: ^3%d ^7Acc:^3%2.2f ^7Killer: %s^3(%ihp)\n\"",
+					self->client->pers.life_kills, self->client->pers.life_headshots, self->client->pers.life_gibs, acc, attacker->client->pers.netname, attacker->health));
+			} // End
 		}
 	} else {
 		AddScore( self, -1 );
@@ -405,6 +544,9 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 				item = BG_FindItem( "Objective" );
 			}
 
+			if (self->message != NULL)
+				G_matchPrintInfo(va("^5Allies have lost %s!", self->message), qfalse);
+
 			self->client->ps.powerups[PW_REDFLAG] = 0;
 		}
 		if ( self->client->ps.powerups[PW_BLUEFLAG] ) {
@@ -413,13 +555,17 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 				item = BG_FindItem( "Objective" );
 			}
 
+			if (self->message != NULL)
+				G_matchPrintInfo(va("^5Axis have lost %s!", self->message), qfalse);
+
 			self->client->ps.powerups[PW_BLUEFLAG] = 0;
 		}
 
 		if ( item ) {
-			launchvel[0] = crandom() * 20;
-			launchvel[1] = crandom() * 20;
-			launchvel[2] = 10 + random() * 10;
+			//G_writeObjectiveEvent(self, objDropped  );
+			launchvel[0] = 0;
+			launchvel[1] = 0;
+			launchvel[2] = 40;
 
 			flag = LaunchItem( item,self->r.currentOrigin,launchvel,self->s.number );
 			flag->s.modelindex2 = self->s.otherEntityNum2; // JPW NERVE FIXME set player->otherentitynum2 with old modelindex2 from flag and restore here
@@ -481,10 +627,17 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		self->client->limboDropWeapon = self->s.weapon; // store this so it can be dropped in limbo
 	}
 // jpw
-	self->s.angles[2] = 0;
-	LookAtKiller( self, inflictor, attacker );
+	// RtcwPro - store the value for player YAW so we can restore on revive
+	// the value STAT_DEAD_YAW can change with lookatkiller etc
+	self->client->ps.persistant[PERS_DEATH_YAW] = SHORT2ANGLE(self->client->pers.cmd.angles[YAW] + self->client->ps.delta_angles[YAW]);
 
-	VectorCopy( self->s.angles, self->client->ps.viewangles );
+	//self->s.angles[2] = 0;
+	LookAtKiller( self, inflictor, attacker );
+	self->client->ps.viewangles[0] = 0;
+	self->client->ps.viewangles[2] = 0;
+	//VectorCopy( self->s.angles, self->client->ps.viewangles ); // don't make the corpse look a different way
+	
+	//trap_UnlinkEntity( self );
 	self->s.loopSound = 0;
 
 	trap_UnlinkEntity( self );
@@ -498,6 +651,11 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 
 	// remove powerups
 	memset( self->client->ps.powerups, 0, sizeof( self->client->ps.powerups ) );
+
+	// RTCWPro - update ready status
+	//if (g_gamestate.integer == GS_WARMUP || g_gamestate.integer == GS_WAITING_FOR_PLAYERS) // only do this during warmup
+	//	self->client->ps.powerups[PW_READY] = (player_ready_status[self->client->ps.clientNum].isReady == 1) ? INT_MAX : 0;
+
 
 	// never gib in a nodrop
 	contents = trap_PointContents( self->r.currentOrigin, -1 );
@@ -576,6 +734,7 @@ int CheckArmor( gentity_t *ent, int damage, int dflags ) {
 	return save;
 }
 
+/*
 qboolean IsHeadShotWeapon( int mod, qboolean aicharacter ) {
 	if ( aicharacter ) {       // ai's are allowed headshots from these weapons
 		if ( mod == MOD_SNIPERRIFLE ||
@@ -767,7 +926,7 @@ gentity_t* G_BuildHead( gentity_t *ent ) {
 	trap_LinkEntity( head );
 
 	return head;
-}
+}*/
 
 /*
 ==============
@@ -848,6 +1007,181 @@ void G_ArmorDamage( gentity_t *targ ) {
 }
 
 /*
+==============
+RTCWPro
+G_GetHitsoundStyle
+==============
+*/
+char* G_GetHitsoundStyle(int headStyle, int bodyStyle, qboolean headshot) {
+
+	if (headshot) 
+	{
+		switch (headStyle)
+		{
+		case 0:
+			return "sound/hitsounds/hithead1.wav";
+			break;
+		case 1:
+			return "sound/hitsounds/hithead1.wav";
+			break;
+		case 2:
+			return "sound/hitsounds/hithead2.wav";
+			break;
+		case 3:
+			return "sound/hitsounds/hithead3.wav";
+			break;
+		case 4:
+			return "sound/hitsounds/hithead4.wav";
+			break;
+		case 5:
+			return "sound/hitsounds/hithead5.wav";
+			break;
+		case 6:
+			return "sound/hitsounds/hithead6.wav";
+			break;
+		case 7:
+			return "sound/hitsounds/hithead7.wav";
+			break;
+		case 8:
+			return "sound/hitsounds/hithead8.wav";
+			break;
+		case 9:
+			return "sound/hitsounds/hithead9.wav";
+			break;
+		default:
+			return "sound/hitsounds/hithead1.wav";
+			break;
+		}
+	}
+	else
+	{
+		switch (bodyStyle)
+		{
+		case 0:
+			return "sound/hitsounds/hitbody1.wav";
+			break;
+		case 1:
+			return "sound/hitsounds/hitbody1.wav";
+			break;
+		case 2:
+			return "sound/hitsounds/hitbody2.wav";
+			break;
+		case 3:
+			return "sound/hitsounds/hitbody3.wav";
+			break;
+		case 4:
+			return "sound/hitsounds/hitbody4.wav";
+			break;
+		case 5:
+			return "sound/hitsounds/hitbody5.wav";
+			break;
+		default:
+			return "sound/hitsounds/hitbody1.wav";
+			break;
+		}
+	}
+}
+
+/*
+==============
+RTCWPro
+G_Hitsounds
+==============
+*/
+void G_Hitsounds( gentity_t *target, gentity_t *attacker, int mod, qboolean headshot ) {
+	gentity_t* te;
+
+	if (!target || !attacker || !target->client || !attacker->client) 
+	{
+		return;
+	}
+
+	qboolean onSameTeam = OnSameTeam(target, attacker);
+
+	// if player is hurting him self don't give any sounds
+	if (target->client == attacker->client) 
+	{
+		return;  // this happens at flaming your self... just return silence...			
+	}
+
+	if (mod == MOD_ARTILLERY ||
+		mod == MOD_GRENADE_SPLASH ||
+		mod == MOD_DYNAMITE_SPLASH ||
+		mod == MOD_DYNAMITE ||
+		mod == MOD_ROCKET ||
+		mod == MOD_ROCKET_SPLASH ||
+		mod == MOD_KNIFE ||
+		mod == MOD_KNIFE2 ||
+		mod == MOD_GRENADE ||
+		mod == MOD_AIRSTRIKE ||
+		mod == MOD_ARTY ||
+		mod == MOD_EXPLOSIVE ||
+		mod == MOD_MORTAR ||
+		mod == MOD_MORTAR_SPLASH ||
+		mod == MOD_SYRINGE || 
+		mod == MOD_UNKNOWN)
+	{
+		return;
+	}
+
+	if (!attacker->client->pers.hitSoundType) 
+	{
+		return;
+	}
+
+	// if team mate
+	if (target->client && attacker->client && onSameTeam) 
+	{
+		//attacker->client->ps.persistant[PERS_HITBODY]--;
+		//hitEventType = HIT_TEAMSHOT;
+
+		if (attacker->client->pers.hitSoundType & HITSOUND_TEAM) 
+		{
+			te = G_TempEntity(attacker->s.pos.trBase, EV_GLOBAL_CLIENT_SOUND);
+			te->s.eventParm = G_SoundIndex("sound/hitsounds/hitteam1.wav");
+			te->s.teamNum = attacker->s.clientNum;
+		}
+	}
+	// If enemy
+	else if (target &&
+		target->client &&
+		attacker &&
+		attacker->client &&
+		attacker->s.number != ENTITYNUM_NONE &&
+		attacker->s.number != ENTITYNUM_WORLD &&
+		attacker != target &&
+		!onSameTeam)
+	{
+		te = G_TempEntity(attacker->s.pos.trBase, EV_GLOBAL_CLIENT_SOUND);
+
+		if (headshot) 
+		{
+			if (attacker->client->pers.hitSoundType & HITSOUND_HEAD) 
+			{
+				//attacker->client->ps.persistant[PERS_HITHEAD]++;
+				//hitEventType = HIT_HEADSHOT;
+
+				int headStyle = attacker->client->pers.hitSoundHeadStyle;
+				te->s.eventParm = G_SoundIndex(G_GetHitsoundStyle(headStyle, 0, qtrue));
+			}
+		}
+		else 
+		{
+			if (attacker->client->pers.hitSoundType & HITSOUND_BODY) 
+			{
+				//attacker->client->ps.persistant[PERS_HITBODY]++;
+				//hitEventType = HIT_BODYSHOT;
+
+				int bodyStyle = attacker->client->pers.hitSoundBodyStyle;
+				te->s.eventParm = G_SoundIndex(G_GetHitsoundStyle(0, bodyStyle, qfalse));
+			}
+		}
+
+		te->s.teamNum = attacker->s.clientNum;
+	}
+}
+
+/*
 ============
 G_Damage
 
@@ -877,6 +1211,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 	int take;
 	int asave;
 	int knockback;
+	qboolean isHeadShot = qfalse;
 
 	if ( !targ->takedamage ) {
 		return;
@@ -884,7 +1219,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 
 	// the intermission has already been qualified for, so don't
 	// allow any extra scoring
-	if ( level.intermissionQueued || g_gamestate.integer != GS_PLAYING ) {
+	if ( level.intermissionQueued || ( g_gamestate.integer != GS_PLAYING && match_warmupDamage.integer == 0 ) ) {
 		return;
 	}
 
@@ -929,6 +1264,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			case MOD_ROCKET:
 			case MOD_ROCKET_SPLASH:
 			case MOD_AIRSTRIKE:
+			case MOD_ARTILLERY:
 			case MOD_GRENADE_PINEAPPLE:
 			case MOD_MORTAR:
 			case MOD_MORTAR_SPLASH:
@@ -986,7 +1322,12 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			dir[2] = 0.3;
 		}
 
-		VectorScale( dir, g_knockback.value * (float)knockback / mass, kvel );
+    	if (dflags & DAMAGE_RADIUS) {
+		    VectorScale( dir, g_damageRadiusKnockback.value * (float)knockback / mass, kvel );	
+		} else {
+        	VectorScale( dir, g_knockback.value * (float)knockback / mass, kvel );
+		}
+		
 		VectorAdd( targ->client->ps.velocity, kvel, targ->client->ps.velocity );
 
 		if ( targ == attacker && !(  mod != MOD_ROCKET &&
@@ -1011,6 +1352,10 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			}
 			targ->client->ps.pm_time = t;
 			targ->client->ps.pm_flags |= PMF_TIME_KNOCKBACK;
+
+			if (g_debugDamage.integer) {
+				AP(va("print \"knockback: %i\n\"", t));
+			}
 		}
 	}
 
@@ -1020,7 +1365,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 		// if TF_NO_FRIENDLY_FIRE is set, don't do damage to the target
 		// if the attacker was on the same team
 		if ( targ != attacker && OnSameTeam( targ, attacker )  ) {
-			if ( !g_friendlyFire.integer ) {
+			if ( ( g_gamestate.integer != GS_PLAYING && match_warmupDamage.integer == 0 ) ) {
 				return;
 			}
 		}
@@ -1070,11 +1415,16 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 	asave = CheckArmor( targ, take, dflags );
 	take -= asave;
 
-	if ( IsHeadShot( targ, qfalse, dir, point, mod ) ) {
+	// RTCWPro - head stuff
+	//if ( IsHeadShot( targ, qfalse, dir, point, mod ) ) {
+	if (targ->headshot && targ->client) {
 
-		if ( take * 2 < 50 ) { // head shots, all weapons, do minimum 50 points damage
-			take = 50;
-		} else {
+		if ( take * 2 < g_hsDamage.integer )
+		{
+			take = g_hsDamage.integer; // head shots, all weapons, do minimum 50 points damage
+		}
+		else
+		{
 			take *= 2; // sniper rifles can do full-kill (and knock into limbo)
 
 		}
@@ -1082,12 +1432,25 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			G_AddEvent( targ, EV_LOSE_HAT, DirToByte( dir ) );
 		}
 
-		targ->client->ps.eFlags |= EF_HEADSHOT;
-	}
+		// RTCWPro - some debug info
+		if (g_debugBullets.integer)
+		{
+			AP(va("print \"%s ^7headshot for %i dmg\n\"", targ->client->pers.netname, take));
+		}
 
-	if ( g_debugDamage.integer ) {
-		G_Printf( "client:%i health:%i damage:%i armor:%i\n", targ->s.number,
-				  targ->health, take, asave );
+		targ->client->ps.eFlags |= EF_HEADSHOT;
+		isHeadShot = qtrue;
+
+		// RtcwPro stats - Record the headshot
+		if ( client && attacker && attacker->client
+			 && attacker->client->sess.sessionTeam != targ->client->sess.sessionTeam ) {
+			G_addStatsHeadShot( attacker, mod );
+		} // End
+
+		if ( g_debugDamage.integer ) {
+			G_Printf( "client:%i health:%i damage:%i armor:%i\n", targ->s.number,
+					  targ->health, take, asave );
+		}
 	}
 
 	// add to the damage inflicted on a player this frame
@@ -1121,6 +1484,13 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 		targ->client->lasthurt_mod = mod;
 	}
 
+	// RTCWPro - hitsounds
+	if (g_hitsounds.integer) {
+		if ((attacker->client) && (targ->client)) {
+			G_Hitsounds(targ, attacker, mod, isHeadShot);
+		}
+	}
+
 	// do the damage
 	if ( take ) {
 		targ->health = targ->health - take;
@@ -1142,7 +1512,16 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			if ( client ) {
 				targ->flags |= FL_NO_KNOCKBACK;
 // JPW NERVE -- repeated shooting sends to limbo
-				if ( g_gametype.integer >= GT_WOLF ) {
+				if (g_gametype.integer >= GT_WOLF) {
+
+					// do gib counting before sending them to limbo
+					if ((targ->health <= FORCE_LIMBO_HEALTH) && (!(targ->client->ps.pm_flags & PMF_LIMBO)
+						&& attacker->client && attacker != targ && !OnSameTeam(attacker, targ) && (g_gamestate.integer != GS_WARMUP))) //do not add gibs to stats during warmup.
+					{
+						attacker->client->sess.gibs++;
+						attacker->client->pers.life_gibs++;
+					}
+
 					if ( ( targ->health < FORCE_LIMBO_HEALTH ) && ( targ->health > GIB_HEALTH ) && ( !( targ->client->ps.pm_flags & PMF_LIMBO ) ) ) {
 						limbo( targ, qtrue );
 					}
@@ -1184,7 +1563,10 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			if ( targ->s.number >= MAX_CLIENTS ) {
 				G_Script_ScriptEvent( targ, "pain", va( "%d %d", targ->health, targ->health + take ) );
 			}
-		}
+		// RtcwPro - update weapon/dmg stats
+		} else {
+			G_addStats( targ, attacker, take, mod );
+		} // End
 
 		//G_ArmorDamage(targ);	//----(SA)	moved out to separate routine
 
@@ -1304,8 +1686,7 @@ qboolean CanDamage (gentity_t *targ, vec3_t origin) {
 G_RadiusDamage
 ============
 */
-qboolean G_RadiusDamage( vec3_t origin, gentity_t *attacker, float damage, float radius,
-						 gentity_t *ignore, int mod ) {
+qboolean G_RadiusDamage( vec3_t origin, gentity_t *attacker, float damage, float radius, gentity_t *ignore, int mod ) {
 	float points, dist;
 	gentity_t   *ent;
 	int entityList[MAX_GENTITIES];

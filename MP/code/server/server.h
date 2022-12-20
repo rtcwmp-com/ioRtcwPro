@@ -27,6 +27,8 @@ If you have questions concerning this license or the applicable additional terms
 */
 
 // server.h
+#ifndef __SERVER_H
+#define __SERVER_H
 
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
@@ -221,10 +223,33 @@ typedef struct client_s {
 #ifdef LEGACY_PROTOCOL
 	qboolean		compat;
 #endif
+
+	//RtcwPro
+	char guid[GUID_LEN]; // L0
+	int clientRestValidated;
+	qboolean clientValidated;
+	//-RtcwPro
 } client_t;
 
 //=============================================================================
+// Rate fix
+typedef struct {
+	netadr_t  adr;
+	int       time;
+} receipt_t;
 
+typedef struct {
+	netadr_t	adr;
+	int			time;
+	int			count;
+	qboolean	flood;
+} floodBan_t;
+
+// MAX_INFO_RECEIPTS is the maximum number of getstatus+getinfo responses that we send
+// in a two second time period.
+#define MAX_INFO_RECEIPTS  48
+
+#define MAX_INFO_FLOOD_BANS 36
 
 // MAX_CHALLENGES is made large to prevent a denial
 // of service attack that could cycle all of them
@@ -270,6 +295,10 @@ typedef struct {
 	netadr_t authorizeAddress;              // for rcon return messages
 #endif
 	int masterResolveTime[MAX_MASTER_SERVERS]; // next svs.time that server should do dns lookup for master server
+
+	// RtcwPro
+	receipt_t infoReceipts[MAX_INFO_RECEIPTS];
+	floodBan_t infoFloodBans[MAX_INFO_FLOOD_BANS];
 } serverStatic_t;
 
 #define SERVER_MAXBANS	1024
@@ -348,6 +377,9 @@ extern	cvar_t	*sv_banFile;
 extern	serverBan_t serverBans[SERVER_MAXBANS];
 extern	int serverBansCount;
 
+extern cvar_t	*sv_serverIP;
+extern cvar_t	*sv_serverCountry;
+
 #ifdef USE_VOIP
 extern	cvar_t	*sv_voip;
 extern	cvar_t	*sv_voipProtocol;
@@ -369,6 +401,19 @@ extern cvar_t  *sv_gameskill;
 extern cvar_t *sv_dl_maxRate;
 
 
+// Streaming
+extern cvar_t* sv_StreamingToken;
+extern cvar_t* sv_StreamingSelfSignedCert;
+
+// Auth
+extern cvar_t* sv_AuthEnabled;
+extern cvar_t* sv_AuthStrictMode;
+
+// Cvar restrictions
+extern cvar_t* sv_GameConfig;
+
+extern cvar_t* sv_checkVersion;
+extern cvar_t* sv_restRunning;
 //===========================================================
 
 //
@@ -407,6 +452,7 @@ void SV_MasterShutdown( void );
 
 int SV_RateMsec(client_t *client);
 
+void SV_ReloadRest(qboolean disableTime);
 //
 // sv_init.c
 //
@@ -451,6 +497,7 @@ int SV_SendQueuedMessages(void);
 // sv_ccmds.c
 //
 void SV_Heartbeat_f( void );
+void SV_SetCvarRestrictions(void);
 
 //
 // sv_snapshot.c
@@ -474,7 +521,11 @@ void        SV_InitGameProgs( void );
 void        SV_ShutdownGameProgs( void );
 void        SV_RestartGameProgs( void );
 qboolean    SV_inPVS( const vec3_t p1, const vec3_t p2 );
-qboolean SV_GetTag( int clientNum, char *tagname, orientation_t * or );
+qboolean SV_GetTag(sharedEntity_t* ent, clientAnimationInfo_t* animInfo, char* tagname, orientation_t* or );
+
+// sv_animation.c
+int SV_LerpTag(orientation_t* tag, clientAnimationInfo_t* animInfo, char* tagname);
+qboolean SV_LoadMDS(int modelIndex, const char* mod_name);
 
 //
 // sv_bot.c
@@ -493,6 +544,10 @@ int BotImport_DebugPolygonCreate( int color, int numPoints, vec3_t *points );
 void BotImport_DebugPolygonDelete( int id );
 
 void SV_BotInitBotLib(void);
+
+// sv_events.c
+//
+//void SV_AuthorizeClient(char* response, char userinfo[MAX_INFO_STRING]);
 
 #if defined ANTIWALLHACK
 //
@@ -565,4 +620,8 @@ void SV_Netchan_Transmit( client_t *client, msg_t *msg );
 int SV_Netchan_TransmitNextFragment( client_t *client );
 qboolean SV_Netchan_Process( client_t *client, msg_t *msg );
 
+
+qboolean SV_CheckDRDoS(netadr_t from);
+
 void SV_Netchan_FreeQueue(client_t *client);
+#endif // !__SERVER_H

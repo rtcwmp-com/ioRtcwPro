@@ -81,6 +81,7 @@ If you have questions concerning this license or the applicable additional terms
 
 int OtherTeam( int team );
 const char *TeamName( int team );
+const char *OtherTeamName( int team );
 const char *TeamColorString( int team );
 
 void Team_DroppedFlagThink( gentity_t *ent );

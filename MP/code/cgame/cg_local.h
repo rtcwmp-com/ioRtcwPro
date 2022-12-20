@@ -41,10 +41,12 @@ If you have questions concerning this license or the applicable additional terms
 #include "../renderer/tr_types.h"
 #include "../game/bg_public.h"
 #include "cg_public.h"
+#include "../client/keycodes.h"	// RtcwPro - Demo commands
 
 
 #define POWERUP_BLINKS      5
 
+#define STATS_FADE_TIME     200.0f // RtcwPro stats
 #define POWERUP_BLINK_TIME  1000
 #define FADE_TIME           200
 #define PULSE_TIME          200
@@ -90,8 +92,6 @@ If you have questions concerning this license or the applicable additional terms
 #define GIANT_WIDTH         32
 #define GIANT_HEIGHT        48
 
-#define NUM_CROSSHAIRS      10
-
 // Ridah, trails
 #define STYPE_STRETCH   0
 #define STYPE_REPEAT    1
@@ -110,6 +110,142 @@ If you have questions concerning this license or the applicable additional terms
 #define LIMBO_3D_W  420
 #define LIMBO_3D_H  312
 // -NERVE - SMF
+
+// RtcwPro
+#define MAX_WINDOW_COUNT        10
+#define MAX_WINDOW_LINES        64
+
+#define MAX_STRINGS             80
+#define MAX_STRING_POOL_LENGTH  128
+
+#define WINDOW_FONTWIDTH    8       // For non-true-type: width to scale from
+#define WINDOW_FONTHEIGHT   8       // For non-true-type: height to scale from
+
+#define WID_NONE            0x00    // General window
+#define WID_STATS           0x01    // Stats (reusable due to scroll effect)
+#define WID_TOPSHOTS        0x02    // Top/Bottom-shots
+#define WID_CLIENTSTATS		0x03	// L0 - 1.0 stats
+
+#define WFX_TEXTSIZING      0x01    // Size the window based on text/font setting
+#define WFX_FLASH           0x02    // Alternate between bg and b2 every half second
+#define WFX_TRUETYPE        0x04    // Use truetype fonts for text
+// These need to be last
+#define WFX_FADEIN          0x10    // Fade the window in (and back out when closing)
+#define WFX_SCROLLUP        0x20    // Scroll window up from the bottom (and back down when closing)
+#define WFX_SCROLLDOWN      0x40    // Scroll window down from the top (and back up when closing)
+#define WFX_SCROLLLEFT      0x80    // Scroll window in from the left (and back right when closing)
+#define WFX_SCROLLRIGHT     0x100   // Scroll window in from the right (and back left when closing)
+
+#define WSTATE_COMPLETE     0x00    // Window is up with startup effects complete
+#define WSTATE_START        0x01    // Window is "initializing" w/effects
+#define WSTATE_SHUTDOWN     0x02    // Window is shutting down with effects
+#define WSTATE_OFF          0x04    // Window is completely shutdown
+#define WID_DEMOCONTROLS	0x01    // Demo Controls
+#define WID_DEMOPOPUP		0x02	// Demo Pop ups
+//#define WID_DEMOHELP		0x08	// Demo key control info
+
+typedef struct {
+	vec4_t colorBorder;         // Window border color
+	vec4_t colorBackground;     // Window fill color
+	vec4_t colorBackground2;    // Window fill color2 (for flashing)
+	int curX;                   // Scrolling X position
+	int curY;                   // Scrolling Y position
+	int effects;                // Window effects
+	int flashMidpoint;          // Flashing transition point (in ms)
+	int flashPeriod;            // Background flashing period (in ms)
+	int fontHeight;             // For non-truetype font drawing
+	float fontScaleX;           // Font scale factor
+	float fontScaleY;           // Font scale factor
+	int fontWidth;              // For non-truetype font drawing
+	float h;                    // Height
+	int id;                     // Window ID for special handling (i.e. stats, motd, etc.)
+	qboolean inuse;             // Activity flag
+	int lineCount;              // Number of lines to display
+	int lineHeight[MAX_WINDOW_LINES];   // Height property for each line
+	char *lineText[MAX_WINDOW_LINES];   // Text info
+	float m_x;                  // Mouse X position
+	float m_y;                  // Mouse Y position
+	int mvInfo;                 // lower 8 = player id, 9 = is_selected
+	int targetTime;             // Time to complete any defined effect
+	int state;                  // Current state of the window
+	int time;                   // Current window time
+	float w;                    // Width
+	float x;                    // Target x-coordinate
+								//    negative values will align the window from the right minus the (window width + offset(x))
+	float y;                    // Target y-coordinate
+								//    negative values will align the window from the bottom minus the (window height + offset(y))
+} cg_window_t;
+
+typedef struct {
+	qboolean fActive;
+	char str[MAX_STRING_POOL_LENGTH];
+} cg_string_t;
+
+typedef struct {
+	int activeWindows[MAX_WINDOW_COUNT];                // List of active windows
+	int numActiveWindows;                               // Number of active windows in use
+	cg_window_t window[MAX_WINDOW_COUNT];           // Static allocation of all windows
+} cg_windowHandler_t;
+
+typedef enum {
+	SHOW_OFF,
+	SHOW_SHUTDOWN,
+	SHOW_ON
+} showView_t;
+
+typedef struct {
+	int fadeTime;
+	int show;
+	int requestTime;
+} demoControlInfo_t;
+
+typedef struct {
+	int fadeTime;
+	int show;
+	int requestTime;
+} demoPopupInfo_t;
+
+#define DEMO_THIRDPERSONUPDATE  0
+#define DEMO_RANGEDELTA         6
+#define DEMO_ANGLEDELTA         4
+
+// L0 - Commented out few vars
+typedef struct {
+	char strWS[WS_MAX][MAX_STRING_TOKENS];
+	char strExtra[2][MAX_STRING_TOKENS];
+	char strRank[MAX_STRING_TOKENS];
+//	char strSkillz[SK_NUM_SKILLS][MAX_STRING_TOKENS];
+	int cWeapons;
+	int cSkills;
+	qboolean fHasStats;
+	int nClientID;
+	int nRounds;
+	int fadeTime;
+	int show;
+	int requestTime;
+} gameStats_t;
+
+typedef struct {
+	char strStats[MAX_STRING_TOKENS];
+	int cWeapons;
+	int cSkills;
+	qboolean fHasStats;
+	int nClientID;
+	int nRounds;
+	int fadeTime;
+	int show;
+	int requestTime;
+} clientGameStats_t;
+
+
+typedef struct {
+	char strWS[WS_MAX * 2][MAX_STRING_TOKENS];
+	int cWeapons;
+	int fadeTime;
+	int show;
+	int requestTime;
+} topshotStats_t;
+// End OSP's dump
 
 //=================================================
 
@@ -269,6 +405,15 @@ typedef struct {
 } skinModel_t;
 //----(SA) end
 
+// RTCWPro - shoutcaster
+#define MAX_SCITEMS 256
+typedef struct scItem_s {
+	char* text;
+	float	dist;
+	float	scale;
+	vec_t	position[2];
+	vec4_t	color;
+} scItem_t;
 
 //=================================================
 
@@ -349,6 +494,9 @@ typedef struct centity_s {
 
 	int highlightTime;
 	qboolean highlighted;
+
+	// RTCWPro
+	int lastSeenTime;
 } centity_t;
 
 
@@ -544,6 +692,7 @@ typedef struct {
 	int score;                      // updated by score servercmds
 	int location;                   // location index for team mode
 	int health;                     // you only get this info about your teammates
+	int playerLimbo;				// player is in limbo
 	int armor;
 	int curWeapon;
 
@@ -598,6 +747,13 @@ typedef struct {
 	char headModelName[MAX_QPATH];
 	gender_t gender;                // from model
 	// -NERVE - SMF
+	// RTCWPro
+	int refStatus;
+	int shoutStatus;
+	int playerAmmo;
+	int playerAmmoClip;
+	int playerWeapon;
+	int playerNades;
 } clientInfo_t;
 
 
@@ -710,6 +866,19 @@ typedef struct {
 
 #define MAX_SPAWN_VARS          64
 #define MAX_SPAWN_VARS_CHARS    2048
+// RtcwPro - Draw HUDnames
+typedef struct specName_s
+{
+	float		x;
+	float		y;
+	float		scale;
+	const char *text;
+	vec3_t		origin;
+	int         lastVisibleTime;
+	int         lastInvisibleTime;
+	qboolean    visible;
+	float		alpha;
+}specName_t;
 
 typedef struct {
 	int clientFrame;                // incremented each frame
@@ -795,6 +964,11 @@ typedef struct {
 	float zoomSensitivity;
 	float zoomval;
 
+	// RtcwPro - zoomFOV
+	qboolean zoomedFOV;
+	int zoomedTime;
+	float zoomedVal;
+	float zoomedSens;
 
 	// information screen text during loading
 	char infoScreenText[MAX_STRING_CHARS];
@@ -807,6 +981,8 @@ typedef struct {
 	int teamPlayers[TEAM_NUM_TEAMS];         // JPW NERVE for scoreboard
 	score_t scores[MAX_CLIENTS];
 	qboolean showScores;
+	qboolean showStats;
+	qboolean showCLgameStats;
 	qboolean scoreBoardShowing;
 	int scoreFadeTime;
 	char killerName[MAX_NAME_LENGTH];
@@ -984,6 +1160,77 @@ typedef struct {
 	char thirtySecondSound_g[MAX_QPATH];
 	char thirtySecondSound_a[MAX_QPATH];
 
+// RtcwPro
+	// Crosshairs
+	vec4_t xhairColor;
+	vec4_t xhairColorAlt;
+	// OSP's window's
+
+	// Announcer
+	int		centerPrintAnnouncerTime;
+	char	*centerPrintAnnouncer;
+	float	centerPrintAnnouncerScale;
+	int		centerPrintAnnouncerDuration;
+	vec3_t	centerPrintAnnouncerColor;
+	int		centerPrintAnnouncerMode;
+
+	// Auto Actions
+	qboolean	latchAutoActions;
+	// Draw names on hud
+	qboolean	renderingFreeCam;
+	specName_t	specOnScreenNames[MAX_CLIENTS];
+	vec4_t reinforcementColor;
+	cg_string_t aStringPool[MAX_STRINGS];
+	cg_window_t *msgWstatsWindow;
+	cg_window_t *msgWtopshotsWindow;
+	int statsRequestTime;
+	cg_window_t *statsWindow;
+	int topshotsRequestTime;
+	cg_window_t *topshotsWindow;
+	cg_window_t *windowCurrent;         // Current window to update.. a bit of a hack :p
+	cg_windowHandler_t winHandler;
+	// L0 - New ones
+	cg_window_t *clientStatsWindow;
+	cg_window_t *msgClientStatsWindow;
+	cg_window_t *demoControlsWindow;
+	cg_window_t *demoPopupWindow;
+
+	// Demo
+	qboolean revertToDefaultKeys;
+	qboolean advertisementDone;
+
+	// Priority Prints (Pop In prints)
+	int popinPrintTime;
+	int popinPrintCharWidth;
+	int popinPrintX;
+	int popinPrintY;
+	char popinPrint[1024];
+	int popinPrintLines;
+	qboolean popinBlink;
+
+	// RTCWPro - complete OSP demo features
+	// Time Counter
+	int timein;
+	int timeCounter;
+
+	qboolean serverRespawning;
+// -OSPx
+
+	// RTCWPro - tj stuff
+	qboolean resetmaxspeed;
+	float topSpeed;
+	float oldSpeed;
+	// tj stuff end
+
+	// RTCWPro
+	scItem_t scItems[MAX_SCITEMS];
+	int numSCItems;
+
+	// RTCWPro - draw triggers
+	int drawTriggersCount;
+	int lastGetTriggerDistancesTime;
+	int drawTriggerEntIndexes[MAX_ENTITIES + 1];
+	float drawTriggerDistances[MAX_ENTITIES + 1];
 	pmoveExt_t pmext;
 
 } cg_t;
@@ -1330,6 +1577,8 @@ typedef struct {
 	qhandle_t medalGauntlet;
 
 	// sounds
+	sfxHandle_t announceFight;
+	sfxHandle_t prepFight;
 	sfxHandle_t n_health;
 	sfxHandle_t noFireUnderwater;
 	sfxHandle_t snipersound;
@@ -1410,6 +1659,8 @@ typedef struct {
 	sfxHandle_t teamsTiedSound;
 
 	// tournament sounds
+	sfxHandle_t count5Sound;
+	sfxHandle_t count4Sound;
 	sfxHandle_t count3Sound;
 	sfxHandle_t count2Sound;
 	sfxHandle_t count1Sound;
@@ -1476,7 +1727,36 @@ typedef struct {
 	qhandle_t selectCursor;
 	qhandle_t sizeCursor;
 
+// RtcwPro
+	// Country Flags
+	qhandle_t countryFlags;
+
+	// chats
+	sfxHandle_t normalChat;
+	sfxHandle_t teamChat;
+	
+	// end of round
+	sfxHandle_t alliesWin;
+	sfxHandle_t axisWin;
+
+
+	// RTCWPro - draw triggers
+	qhandle_t transmitTrigger;
+	qhandle_t transmitTriggerEdges;
+	qhandle_t objTrigger;
+	qhandle_t objTriggerEdges;
+	qhandle_t customTrigger;
+	qhandle_t customTriggerEdges;
+
 } cgMedia_t;
+
+// RtcwPro - Pause states
+typedef enum {
+	PAUSE_NONE,
+	PAUSE_ON,
+	PAUSE_RESUMING
+} cPauseSts_t;
+
 
 
 // The client game static (cgs) structure hold everything
@@ -1513,6 +1793,7 @@ typedef struct {
 	float timelimit;                        // NERVE - SMF - made this a float
 	int maxclients;
 	char mapname[MAX_QPATH];
+	char rawmapname[MAX_QPATH];
 	char redTeam[MAX_QPATH];                // A team
 	char blueTeam[MAX_QPATH];               // B team
 
@@ -1586,6 +1867,44 @@ typedef struct {
 	int complaintClient;        // DHM - Nerve
 	int complaintEndTime;       // DHM - Nerve
 	float smokeWindDir; // JPW NERVE for smoke puffs & wind (arty, airstrikes, bullet impacts)
+
+	// RtcwPro - Demo
+	demoControlInfo_t demoControlInfo;
+	demoPopupInfo_t demoPopUpInfo;
+	int thirdpersonUpdate;
+	qboolean showNormals;
+	qboolean wallhack;
+	int noChat;
+	int noVoice;
+	qboolean freezeDemo;
+	int aviDemoRate;                                    // Demo playback recording
+	int cursorUpdate;                                   // Timeout for mouse pointer view
+
+	int axisLeft;		// For DM
+	int alliedLeft;		// For DM
+	int aReinfOffset[TEAM_NUM_TEAMS];   // Reinforcements offset
+	int ccSelectedTeam;					// Reinforcements offset
+	int fixedphysics;	// Fixed pshysics
+	int pauseState;		// Pause
+	int pauseTime;
+	int readyState;		// Ready
+	int playersReady;   // number of players ready so far
+	int playerCount;	// number of players
+
+	// Pause
+	cPauseSts_t match_paused;
+	int match_resumes;
+	int match_expired;
+	int match_stepTimer;
+	// OSP's stats
+	gameStats_t gamestats;
+	clientGameStats_t clientGameStats; // L0 - 1.0 alike
+	topshotStats_t topshots;
+	fileHandle_t dumpStatsFile;
+	char* dumpStatsFileName;  // Name of file to dump stats
+	int dumpStatsTime;
+	qboolean fKeyPressed[256];                          // Key status to get around console issues
+	int timescaleUpdate;                                // Timescale display for demo playback
 } cgs_t;
 
 //==============================================================================
@@ -1773,6 +2092,117 @@ extern vmCvar_t cg_descriptiveText;
 extern vmCvar_t cg_autoReload;
 extern vmCvar_t cg_antilag;
 
+extern vmCvar_t authLevel;
+// RtcwPro
+extern vmCvar_t cg_crosshairPulse;
+extern vmCvar_t	cg_showFlags;
+extern vmCvar_t cg_bloodDamageBlend;
+extern vmCvar_t cg_bloodFlash;
+extern vmCvar_t cg_crosshairAlpha;
+extern vmCvar_t cg_crosshairAlphaAlt;
+extern vmCvar_t cg_crosshairColor;
+extern vmCvar_t cg_crosshairColorAlt;
+extern vmCvar_t cg_coloredCrosshairNames;
+extern vmCvar_t ch_font;
+extern vmCvar_t cg_drawWeaponIconFlash;
+extern vmCvar_t cg_muzzleFlash;
+extern vmCvar_t cg_hitsounds;
+extern vmCvar_t cg_complaintPopUp;
+extern vmCvar_t cg_drawReinforcementTime;
+extern vmCvar_t cg_noChat;
+extern vmCvar_t cg_noVoice;
+
+extern vmCvar_t	vp_drawnames;
+extern vmCvar_t	cg_drawNames;
+extern vmCvar_t cg_announcer;
+extern vmCvar_t cg_drawPickupItems;
+extern vmCvar_t cg_autoAction;
+extern vmCvar_t cg_statsList;
+extern vmCvar_t cg_useScreenshotJPEG;
+extern vmCvar_t cg_chatAlpha;
+extern vmCvar_t cg_chatBackgroundColor;
+extern vmCvar_t cg_chatBeep;
+extern vmCvar_t cg_printObjectiveInfo;
+extern vmCvar_t cg_instantTapout;
+extern vmCvar_t cg_forceTapout;
+extern vmCvar_t cg_uinfo;
+extern vmCvar_t cf_wstats;
+extern vmCvar_t cf_wtopshots;
+
+extern vmCvar_t cg_zoomedFOV;
+extern vmCvar_t cg_zoomedSens;
+extern vmCvar_t int_ui_blackout;
+extern vmCvar_t cg_noAmmoAutoSwitch;
+
+extern vmCvar_t demo_avifpsF1;
+extern vmCvar_t demo_avifpsF2;
+extern vmCvar_t demo_avifpsF3;
+extern vmCvar_t demo_avifpsF4;
+extern vmCvar_t demo_avifpsF5;
+extern vmCvar_t demo_drawTimeScale;
+extern vmCvar_t demo_infoWindow;
+extern vmCvar_t demo_controlsWindow;
+extern vmCvar_t demo_popupWindow;
+extern vmCvar_t demo_notifyWindow;
+extern vmCvar_t demo_showTimein;
+extern vmCvar_t	demo_noAdvertisement;
+// engine mappings
+extern vmCvar_t int_cl_maxpackets;
+extern vmCvar_t int_cl_timenudge;
+extern vmCvar_t str_cl_guid;
+
+// draw speed
+extern vmCvar_t cg_drawSpeed;
+extern vmCvar_t cg_speedX;
+extern vmCvar_t cg_speedY;
+
+//added from et - nihi
+extern vmCvar_t cg_spawnTimer_period;
+extern vmCvar_t cg_spawnTimer_set;
+
+// added from et-legacy - crumbs
+extern vmCvar_t cg_tracers;
+// draw triggers
+extern vmCvar_t cg_drawTriggers;
+
+// RT and ERT
+extern vmCvar_t cg_drawEnemyTimer;
+extern vmCvar_t cg_enemyTimerColor;
+extern vmCvar_t cg_enemyTimerX;
+extern vmCvar_t cg_enemyTimerY;
+extern vmCvar_t cg_enemyTimerProX;
+extern vmCvar_t cg_enemyTimerProY;
+extern vmCvar_t cg_reinforcementTimeColor;
+extern vmCvar_t cg_reinforcementTimeX;
+extern vmCvar_t cg_reinforcementTimeY;
+extern vmCvar_t cg_reinforcementTimeProX;
+extern vmCvar_t cg_reinforcementTimeProY;
+
+extern vmCvar_t cg_findMedic;
+extern vmCvar_t cg_hitsoundBodyStyle;
+extern vmCvar_t cg_hitsoundHeadStyle;
+extern vmCvar_t cg_pauseMusic;
+extern vmCvar_t cg_showPriorityText;
+extern vmCvar_t cg_priorityTextX;
+extern vmCvar_t cg_priorityTextY;
+extern vmCvar_t cg_notifyTextX;
+extern vmCvar_t cg_notifyTextY;
+extern vmCvar_t cg_notifyTextShadow;
+extern vmCvar_t cg_notifyTextWidth;
+extern vmCvar_t cg_notifyTextHeight;
+extern vmCvar_t cg_chatX;
+extern vmCvar_t cg_chatY;
+extern vmCvar_t cg_teamOverlayX;
+extern vmCvar_t cg_teamOverlayY;
+extern vmCvar_t cg_compassX;
+extern vmCvar_t cg_compassY;
+extern vmCvar_t cg_zoomedSensLock;
+extern vmCvar_t cg_lagometerX;
+extern vmCvar_t cg_lagometerY;
+extern vmCvar_t cg_drawFrags;
+extern vmCvar_t cg_fragsY;
+extern vmCvar_t cg_fragsWidth;
+extern vmCvar_t cg_fixedphysicsfps;
 //
 // cg_main.c
 //
@@ -1793,12 +2223,16 @@ int CG_LastAttacker( void );
 void CG_LoadMenus( const char *menuFile );
 void CG_KeyEvent( int key, qboolean down );
 void CG_MouseEvent( int x, int y );
-void CG_EventHandling( int type );
+void CG_EventHandling(int type, qboolean forced);
 
 qboolean CG_GetTag( int clientNum, char *tagname, orientation_t * or );
 qboolean CG_GetWeaponTag( int clientNum, char *tagname, orientation_t * or );
 
 qboolean CG_CheckCenterView( void );
+char* CG_generateFilename(void);		// RtcwPro clean file name - ET Port
+char *CG_generateFilename( void );		// L0 - OSP port
+void CG_printConsoleString( char *str );// L0 - OSP port
+qboolean CG_execFile(char* filename);
 
 //
 // cg_view.c
@@ -1813,6 +2247,9 @@ void CG_ZoomDown_f( void );
 void CG_ZoomIn_f( void );
 void CG_ZoomOut_f( void );
 void CG_ZoomUp_f( void );
+// RtcwPro - FOV zoom effect
+void CG_zoomViewSet_f(void);
+void CG_zoomViewRevert_f(void);
 
 void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demoPlayback );
 
@@ -1875,6 +2312,15 @@ void CG_SaveTransTable( void );
 void CG_ReloadTranslation( void );
 // -NERVE - SMF
 
+// RtcwPro - Country Flags
+void CG_DrawPicST(float x, float y, float width, float height, float s0, float t0, float s1, float t1, qhandle_t hShader);
+
+// RtcwPro
+void CG_DrawPlayerAmmo(float *color, int weapon, int playerAmmo, int playerAmmoClip, int playerNades);
+char* CG_GetClock(void);
+void CG_ColorForPercent(float percent, vec4_t hcolor);
+void CG_DrawTriggers(void);
+
 //
 // cg_draw.c, cg_newDraw.c
 //
@@ -1919,8 +2365,24 @@ qboolean CG_YourTeamHasFlag( void );
 qboolean CG_OtherTeamHasFlag( void );
 qhandle_t CG_StatusHandle( int task );
 void CG_Fade( int r, int g, int b, int a, float time );
+void CG_ShoutcasterItems();
+void CG_ShoutcasterDynamite(int num);
 
 
+// - Reinforcement offset
+//int CG_CalculateReinfTime(void);
+//float CG_CalculateReinfTime_Float(void);
+int CG_CalculateReinfTime(qboolean menu);
+float CG_CalculateReinfTime_Float(qboolean menu);
+// PopIn
+void CG_PopinPrint(const char *str, int charWidth, qboolean blink);
+// - Announcer
+void CG_AddAnnouncer(char *text, sfxHandle_t sound, float scale, int duration, float r, float g, float b, int mode);
+void CG_DrawAnnouncer(void);
+#define ANNOUNCER_NORMAL 1
+#define ANNOUNCER_SINE 2
+#define ANNOUNCER_INVERSE_SINE 3
+#define ANNOUNCER_TAN 4
 
 
 //
@@ -1989,6 +2451,7 @@ void CG_NextWeapon_f( void );
 void CG_PrevWeapon_f( void );
 void CG_Weapon_f( void );
 void CG_WeaponBank_f( void );
+qboolean CG_WeaponSelectable(int i);
 
 void CG_FinishWeaponChange( int lastweap, int newweap );
 
@@ -2029,7 +2492,7 @@ void CG_AddPlayerWeapon( refEntity_t *parent, playerState_t *ps, centity_t *cent
 void CG_DrawWeaponSelect( void );
 void CG_DrawHoldableSelect( void );
 
-void CG_OutOfAmmoChange( void );
+void CG_OutOfAmmoChange( qboolean allowforceswitch );
 void CG_HoldableUsedupChange( void ); //----(SA)	added
 
 //----(SA) added to header to access from outside cg_weapons.c
@@ -2192,6 +2655,9 @@ void CG_LoadingString( const char *s );
 void CG_LoadingItem( int itemNum );
 void CG_LoadingClient( int clientNum );
 void CG_DrawInformation( void );
+void CG_DemoClick(int key);
+void CG_createControlsWindow(void);
+void CG_demoView(void);
 
 //
 // cg_scoreboard.c
@@ -2199,11 +2665,20 @@ void CG_DrawInformation( void );
 qboolean CG_DrawScoreboard( void );
 void CG_DrawTourneyScoreboard( void );
 
+
 //
 // cg_consolecmds.c
 //
 qboolean CG_ConsoleCommand( void );
 void CG_InitConsoleCommands( void );
+
+// RtcwPro
+void CG_autoRecord_f( void );
+void CG_autoScreenShot_f( void );
+void CG_dumpStats_f( void );
+void CG_wStatsUp_f( void );
+void CG_StatsUp_f( void );
+extern const char *aMonths[12];
 
 //
 // cg_servercmds.c
@@ -2217,14 +2692,33 @@ void CG_SendMoveSpeed( animation_t *animList, int numAnims, char *modelName );
 void CG_LoadVoiceChats( void );               // NERVE - SMF
 void CG_PlayBufferedVoiceChats( void );       // NERVE - SMF
 void CG_AddToNotify( const char *str );
+const char* CG_LocalizeServerCommand( const char *buf ); // L0 - So it's more accessible
+void CG_ParseReinforcementTimes(const char *pszReinfSeedString);
 
 //
 // cg_playerstate.c
 //
 void CG_Respawn( void );
 void CG_TransitionPlayerState( playerState_t *ps, playerState_t *ops );
+qboolean PointVisible(vec3_t point); // RtcwPro shoutcasting
+qboolean VisibleToScreen(vec3_t point, vec_t world[2]);
 
 
+// RtcwPro -  cg_window.c
+void CG_createDemoPopUpWindow(char *str, int sec);
+qboolean CG_addString( cg_window_t *w, char *buf );
+void CG_createStatsWindow( void );
+void CG_createClientStatsWindow( void );
+void CG_createTopShotsWindow( void );
+void CG_printWindow( char *str );
+void CG_removeStrings( cg_window_t *w );
+cg_window_t *CG_windowAlloc( int fx, int startupLength );
+void CG_windowDraw( void );
+void CG_windowFree( cg_window_t *w );
+void CG_windowInit( void );
+void CG_windowNormalizeOnText( cg_window_t *w );
+
+void CG_createWstatsMsgWindow( void );
 //===============================================
 
 //
@@ -2241,12 +2735,15 @@ void	trap_Error(const char *fmt) __attribute__((noreturn));
 // milliseconds should only be used for performance tuning, never
 // for anything game related.  Get time from the CG_DrawActiveFrame parameter
 int         trap_Milliseconds( void );
+int         trap_RealTime( qtime_t *qtime ); // RtcwPro - So it's more accessible
 
 // console variable interaction
 void        trap_Cvar_Register( vmCvar_t *vmCvar, const char *varName, const char *defaultValue, int flags );
 void        trap_Cvar_Update( vmCvar_t *vmCvar );
 void        trap_Cvar_Set( const char *var_name, const char *value );
 void        trap_Cvar_VariableStringBuffer( const char *var_name, char *buffer, int bufsize );
+void		trap_Rest_Validate(void); // RtcwPro
+void		trap_Rest_Build(const char *data); // RtcwPro
 
 // ServerCommand and ConsoleCommand parameter access
 int         trap_Argc( void );
@@ -2472,3 +2969,35 @@ void        CG_StartCamera( const char *name, qboolean startBlack );
 int         CG_LoadCamera( const char *name );
 void        CG_FreeCamera( int camNum );
 //----(SA)	end
+
+// RtcwPro
+// Text
+int CG_Text_Width_Ext( const char *text, float scale, int limit, fontInfo_t* font );
+int CG_Text_Height_Ext( const char *text, float scale, int limit, fontInfo_t* font );
+void CG_Text_Paint_Ext( float x, float y, float scalex, float scaley, vec4_t color, const char *text, float adjust, int limit, int style, fontInfo_t* font );
+// Hud names
+void CG_Text_Paint_ext2(float x, float y, float scale, vec4_t color, const char *text, float adjust, int limit, int style);
+int CG_Text_Width_ext2(const char *text, float scale, int limit);
+int CG_Text_Height_ext2(const char *text, float scale, int limit);
+// Pause
+void CG_ParsePause( const char *pState );
+// Ready
+void CG_ParseReady(const char* pState);
+
+void CG_DrawRect_FixedBorder( float x, float y, float width, float height, int border, const float *color );
+// RtcwPro Autoaction values
+#define AA_DEMORECORD   0x01
+#define AA_SCREENSHOT   0x02
+#define AA_STATSDUMP    0x04
+// Ready
+#define CREADY_NONE		0x00	// Countdown, playing..
+#define CREADY_AWAITING	0x01	// Awaiting all to ready up..
+#define CREADY_PENDING	0x02	// Awaiting but can start once treshold (minclients) is reached..
+#define MAX_NETNAME		36
+// RtcwPro macro's
+#define Pri( x ) CG_Printf( "[cgnotify]%s", CG_LocalizeServerCommand( x ) )
+#define CPri( x ) CG_CenterPrint( CG_LocalizeServerCommand( x ), SCREEN_HEIGHT - ( SCREEN_HEIGHT * 0.2 ), SMALLCHAR_WIDTH );
+#define CPriP( x ) CG_PriorityCenterPrint(CG_LocalizeServerCommand( x ), SCREEN_HEIGHT - ( SCREEN_HEIGHT * 0.2 ), SMALLCHAR_WIDTH, -1 );
+
+// reqSS
+void trap_RequestSS(char* address, char* hookid, char* hooktoken, char* waittime, char* datetime);

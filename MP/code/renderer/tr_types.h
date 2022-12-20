@@ -32,6 +32,8 @@ If you have questions concerning this license or the applicable additional terms
 
 #define MAX_CORONAS     32          //----(SA)	not really a reason to limit this other than trying to keep a reasonable count
 #define MAX_DLIGHTS     32          // can't be increased, because bit flags are used on surfaces
+#define MAX_ENTITIES    1023        // can't be increased without changing drawsurf bit packing
+
 #define	REFENTITYNUM_BITS	10		// can't be increased without changing drawsurf bit packing
 #define	REFENTITYNUM_MASK	((1<<REFENTITYNUM_BITS) - 1)
 // the last N-bit number (2^REFENTITYNUM_BITS - 1) is reserved for the special world refentity,

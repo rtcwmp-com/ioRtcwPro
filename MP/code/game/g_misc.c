@@ -129,14 +129,14 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles ) {
 	player->client->ps.origin[2] += 1;
 
 	if (!noAngles) {
-	// spit the player out
-	AngleVectors( angles, player->client->ps.velocity, NULL, NULL );
-	VectorScale( player->client->ps.velocity, 400, player->client->ps.velocity );
-	player->client->ps.pm_time = 160;       // hold time
-	player->client->ps.pm_flags |= PMF_TIME_KNOCKBACK;
+		// spit the player out
+		AngleVectors( angles, player->client->ps.velocity, NULL, NULL );
+		VectorScale( player->client->ps.velocity, 400, player->client->ps.velocity );
+		player->client->ps.pm_time = 160;       // hold time
+		player->client->ps.pm_flags |= PMF_TIME_KNOCKBACK;
 
-	// set angles
-	SetClientViewAngle(player, angles);
+		// set angles
+		SetClientViewAngle(player, angles);
 	}
 	// toggle the teleport bit so the client knows to not lerp
 	player->client->ps.eFlags ^= EF_TELEPORT_BIT;
@@ -155,6 +155,9 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles ) {
 	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR ) {
 		trap_LinkEntity( player );
 	}
+
+	// RtcwPro - Antilag
+	G_ResetTrail(player);
 }
 
 
@@ -1584,7 +1587,10 @@ void Fire_Lead( gentity_t *ent, gentity_t *activator, float spread, int damage, 
 	VectorMA( end, r, right, end );
 	VectorMA( end, u, up, end );
 
-	G_HistoricalTrace( ent, &tr, muzzle, NULL, NULL, end, ent->s.number, MASK_SHOT );
+	// RTCWPro - unused
+	// RtcwPro added historical trace (unlagged)
+	//G_HistoricalTrace( ent, &tr, muzzle, NULL, NULL, end, ent->s.number, MASK_SHOT );
+	trap_Trace(&tr, muzzle, NULL, NULL, end, ent->s.number, MASK_SHOT);
 
 	if ( g_gametype.integer == GT_SINGLE_PLAYER ) {
 		AICast_ProcessBullet( activator, muzzle, tr.endpos );

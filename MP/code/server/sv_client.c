@@ -349,12 +349,18 @@ void SV_DirectConnect( netadr_t from ) {
 	int count;
 	char		*ip;
 	char		*guid;
+	char restricted_cvars[BIG_INFO_STRING];
 #ifdef LEGACY_PROTOCOL
 	qboolean	compat = qfalse;
 #endif
 
 	Com_DPrintf( "SVC_DirectConnect ()\n" );
 
+
+	if (SV_CheckDRDoS(from)) {
+		return;
+	}
+	
 	// Check whether this client is banned.
 	if(SV_IsBanned(&from, qfalse))
 	{
@@ -364,6 +370,16 @@ void SV_DirectConnect( netadr_t from ) {
 
 	Q_strncpyz( userinfo, Cmd_Argv( 1 ), sizeof( userinfo ) );
 
+	// RTCWPro
+	if (!NET_IsLocalAddress(from)) {
+		int cl_checkversion = atoi(Info_ValueForKey(userinfo, "cl_checkversion"));
+		if (cl_checkversion != sv_checkVersion->integer)
+		{
+			NET_OutOfBandPrint(NS_SERVER, from, "print\nInvalid client version. Server running version %s.%i. Run updater as admin or download at rtcwpro.com\n", GAMEVERSION, sv_checkVersion->integer);
+			return;
+		}
+	}
+	
 	// Check for GUID
 	guid = Info_ValueForKey( userinfo, "cl_guid" );
 
@@ -480,6 +496,9 @@ void SV_DirectConnect( netadr_t from ) {
 
 		Com_Printf("Client %i connecting with %i challenge ping\n", i, ping);
 		challengeptr->connected = qtrue;
+	} else {
+		// force the "ip" info key to "localhost"
+		Info_SetValueForKey( userinfo, "ip", "localhost" );
 	}
 
 	newcl = &temp;
@@ -578,6 +597,9 @@ gotnewcl:
 	// init the netchan queue
 	newcl->netchan_end_queue = &newcl->netchan_start_queue;
 
+	// Save guid so game code can get it.
+	Q_strncpyz(newcl->guid, guid, sizeof(newcl->guid));
+	Info_SetValueForKey(userinfo, "cl_guid", guid);
 	// save the userinfo
 	Q_strncpyz( newcl->userinfo, userinfo, sizeof( newcl->userinfo ) );
 
@@ -606,7 +628,8 @@ gotnewcl:
 	newcl->lastSnapshotTime = 0;
 	newcl->lastPacketTime = svs.time;
 	newcl->lastConnectTime = svs.time;
-
+	newcl->clientRestValidated = (!Q_stricmp(sv_GameConfig->string, "") ? RKVALD_TIME_OFF : svs.time + RKVALD_TIME_FULL);
+    newcl->clientValidated = qfalse;
 	// when we receive the first packet from the client, we will
 	// notice that it is from a different serverid and that the
 	// gamestate message was not just sent, forcing a retransmit
@@ -622,6 +645,12 @@ gotnewcl:
 	}
 	if ( count == 1 || count == sv_maxclients->integer ) {
 		SV_Heartbeat_f();
+	}
+	// Sent list of restricted cvars out ..
+	if (Q_stricmp(sv_GameConfig->string, "")) {
+		Q_strncpyz(restricted_cvars, Cvar_GetRestrictedList(), sizeof(restricted_cvars));
+		NET_OutOfBandPrint(NS_SERVER, from, "getRestrictedList %s", restricted_cvars);
+		Com_DPrintf("   SENT:  getRestrictedList %s\n", restricted_cvars);
 	}
 }
 
@@ -1707,7 +1736,11 @@ static qboolean SV_ClientCommand( client_t *cl, msg_t *msg ) {
 	}
 
 	Com_DPrintf( "clientCommand: %s : %i : %s\n", cl->name, seq, s );
+    // if validated then stay validated
+	if ( !Q_strncmp( "rkvald 1", s, 8 )) {
+        cl->clientValidated = qtrue;
 
+	}
 	// drop the connection if we have somehow lost commands
 	if ( seq > cl->lastClientCommand + 1 ) {
 		Com_Printf( "Client %s lost %i clientCommands\n", cl->name,
@@ -1717,7 +1750,7 @@ static qboolean SV_ClientCommand( client_t *cl, msg_t *msg ) {
 	}
 
 	// NERVE - SMF - some server game-only commands we cannot have flood protect
-	if ( !Q_strncmp( "team", s, 4 ) || !Q_strncmp( "setspawnpt", s, 10 ) || !Q_strncmp( "score", s, 5 ) ) {
+	if ( !Q_strncmp( "team", s, 4 ) || !Q_strncmp( "setspawnpt", s, 10 ) || !Q_strncmp( "score", s, 5 ) || !Q_stricmp("forcetapout", s)) {
 //		Com_DPrintf( "Skipping flood protection for: %s\n", s );
 		floodprotect = qfalse;
 	}
@@ -1744,7 +1777,23 @@ static qboolean SV_ClientCommand( client_t *cl, msg_t *msg ) {
 		cl->nextReliableTime = svs.time + 800;
 	}
 
-	SV_ExecuteClientCommand( cl, s, clientOk );
+	if (!Q_strncmp(CTL_RKVALD, s, strlen(CTL_RKVALD))) {
+		if (!Q_stricmp(sv_GameConfig->string, "")) {
+			cl->clientRestValidated = RKVALD_TIME_OFF;
+			cl->clientValidated = qtrue;
+		}
+		else {
+			Cmd_TokenizeString(s);
+			if (Cmd_Argv(1) && !Q_stricmp(Cmd_Argv(1), RKVALD_OK)) {
+
+				cl->clientRestValidated = svs.time + RKVALD_TIME_FULL;
+				cl->clientValidated = qtrue;
+			}
+		}
+	}
+	else {
+		SV_ExecuteClientCommand(cl, s, clientOk);
+	}
 
 	cl->lastClientCommand = seq;
 	Com_sprintf( cl->lastClientCommandString, sizeof( cl->lastClientCommandString ), "%s", s );
@@ -2124,5 +2173,13 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 //	if ( msg->readcount != msg->cursize ) {
 //		Com_Printf( "WARNING: Junk at end of packet for client %i\n", cl - svs.clients );
 //	}
-}
 
+	if (Q_stricmp(sv_GameConfig->string, "") &&
+		cl->clientRestValidated != RKVALD_TIME_OFF &&
+		cl->clientRestValidated < svs.time &&
+		cl->netchan.remoteAddress.type != NA_BOT && !cl->clientValidated)
+	{
+		SV_DropClient(cl, "^5Failure to comply with server restrictions rules.\n^5Correct your settings before rejoning.");
+		return;
+	}
+}

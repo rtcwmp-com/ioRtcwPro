@@ -119,6 +119,7 @@ extern vmCvar_t ui_mapIndex;
 
 extern vmCvar_t ui_browserMaster;
 extern vmCvar_t ui_browserGameType;
+extern vmCvar_t ui_browserSortKey;
 extern vmCvar_t ui_browserShowFull;
 extern vmCvar_t ui_browserShowEmpty;
 extern vmCvar_t ui_browserShowFriendlyFire;
@@ -133,6 +134,19 @@ extern vmCvar_t ui_limboOptions;
 extern vmCvar_t ui_isSpectator;
 // -NERVE - SMF
 
+// RtcwPro
+extern vmCvar_t ui_crosshairColor;
+extern vmCvar_t ui_crosshairColorAlt;
+extern vmCvar_t ui_crosshairAlpha;
+extern vmCvar_t ui_crosshairAlphaAlt;
+extern vmCvar_t ui_crosshairSize;
+// Speclock
+extern vmCvar_t ui_blackout;
+extern vmCvar_t ui_showtooltips;
+// -RtcwPro
+extern vmCvar_t ui_demoDir;
+extern vmCvar_t ui_gameversion;
+extern vmCvar_t fs_game;
 //
 // ui_qmenu.c
 //
@@ -884,6 +898,11 @@ typedef struct {
 	int nextFindPlayerRefresh;
 
 	int currentCrosshair;
+	// RtcwPro - Crosshairs
+	vec4_t xhairColor;
+	vec4_t xhairColorAlt;
+	// -RtcwPro
+
 	int startPostGameTime;
 	sfxHandle_t newHighScoreSound;
 

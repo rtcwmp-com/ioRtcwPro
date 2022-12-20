@@ -28,6 +28,8 @@ If you have questions concerning this license or the applicable additional terms
 
 
 // g_public.h -- game module information visible to server
+#ifndef __G_PUBLIC_H
+#define __G_PUBLIC_H
 
 #define GAME_API_VERSION    8
 
@@ -420,7 +422,10 @@ typedef enum {
 	BOTLIB_PC_LOAD_SOURCE,
 	BOTLIB_PC_FREE_SOURCE,
 	BOTLIB_PC_READ_TOKEN,
-	BOTLIB_PC_SOURCE_FILE_AND_LINE
+	BOTLIB_PC_SOURCE_FILE_AND_LINE,
+	G_FS_FILE_EXIST,
+	G_CVAR_REST_LOAD,
+	G_SUBMIT_STATS_CURL
 
 } gameImport_t;
 
@@ -469,3 +474,4 @@ typedef enum {
 
 } gameExport_t;
 
+#endif // !__G_PUBLIC_H

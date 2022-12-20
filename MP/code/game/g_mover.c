@@ -91,6 +91,7 @@ PUSHMOVE
 ===============================================================================
 */
 
+void MatchTeam( gentity_t *teamLeader, int moverState, int time );
 void Reached_Train( gentity_t *ent );
 void Think_BeginMoving( gentity_t *ent );
 void Use_Func_Rotate( gentity_t * ent, gentity_t * other, gentity_t * activator );
@@ -686,7 +687,11 @@ void G_RunMover( gentity_t *ent ) {
 
 	// if stationary at one of the positions, don't move anything
 	if ( ent->s.pos.trType != TR_STATIONARY || ent->s.apos.trType != TR_STATIONARY ) {
-		G_MoverTeam( ent );
+		// RtcwPro - Pause
+		if ( level.paused == PAUSE_NONE ) {
+			G_MoverTeam( ent );
+		} else { ent->s.pos.trTime += level.time - level.previousTime;}
+		// End
 	}
 
 	// check think function
@@ -2146,21 +2151,36 @@ void G_TryDoor( gentity_t *ent, gentity_t *other, gentity_t *activator ) {
 	walking = (qboolean)( ent->flags & FL_SOFTACTIVATE );
 
 
-	if ( ( ent->s.apos.trType == TR_STATIONARY && ent->s.pos.trType == TR_STATIONARY ) ) {
-		if ( ent->active == qfalse ) {
-			if ( ent->key < 0 ) {  // door force locked
-				if ( !walking && activator ) { // only send audible event if not trying to open slowly
+	if ( ( ent->s.apos.trType == TR_STATIONARY && ent->s.pos.trType == TR_STATIONARY ) )
+	{
+		if ( ent->active == qfalse )
+		{
+			// door force locked
+			//if ( ent->key < 0 )
+			// RTCWPro - allowteams ET - port
+			if (ent->key < 0 || !G_AllowTeamsAllowed(ent, activator))
+			{
+				// only send audible event if not trying to open slowly
+				if ( !walking && activator )
+				{
 					AICast_AudibleEvent( activator->s.clientNum, ent->s.origin, HEAR_RANGE_DOOR_LOCKED );   // "someone tried locked door near me!"
 				}
 				G_AddEvent( ent, EV_GENERAL_SOUND, ent->soundPos3 );
 				return;
 			}
 
-			if ( activator ) {
-				if ( ent->key > 0 ) {  // door requires key
+			if ( activator )
+			{
+				if ( ent->key > 0 )
+				{  // door requires key
 					gitem_t *item = BG_FindItemForKey( ent->key, 0 );
-					if ( !( activator->client->ps.stats[STAT_KEYS] & ( 1 << item->giTag ) ) ) {
-						if ( !walking ) {  // only send audible event if not trying to open slowly
+					//if ( !( activator->client->ps.stats[STAT_KEYS] & ( 1 << item->giTag ) ) )
+					// RTCWPro - allowteams - ET port
+					if (!(activator->client->ps.stats[STAT_KEYS] & (1 << item->giTag)) || (!G_AllowTeamsAllowed(ent, activator)))
+					{
+						// only send audible event if not trying to open slowly
+						if ( !walking )
+						{
 							AICast_AudibleEvent( activator->s.clientNum, ent->s.origin, HEAR_RANGE_DOOR_LOCKED );   // "someone tried locked door near me!"
 						}
 						// player does not have key
@@ -2339,7 +2359,11 @@ void SP_func_door( gentity_t *ent ) {
 
 	InitMover( ent );
 
-	ent->s.dmgFlags = HINT_DOOR;    // make it a door for cursorhints
+	// RTCWPro - allowteams - ET port
+	if (!ent->allowteams)
+	{
+		ent->s.dmgFlags = HINT_DOOR;    // make it a door for cursorhints
+	}
 
 	if ( !( ent->flags & FL_TEAMSLAVE ) ) {
 		int health;
@@ -3927,7 +3951,11 @@ void SP_func_door_rotating( gentity_t *ent ) {
 
 	InitMoverRotate( ent );
 
-	ent->s.dmgFlags = HINT_DOOR_ROTATING;
+	// RTCWPro - allowteams - ET port
+	if (!ent->allowteams)
+	{
+		ent->s.dmgFlags = HINT_DOOR_ROTATING;
+	}
 
 	if ( !( ent->flags & FL_TEAMSLAVE ) ) {
 		int health;

@@ -33,6 +33,8 @@ If you have questions concerning this license or the applicable additional terms
  *
 */
 
+//#include "../curl-7.60.0/include/curl/curl.h"
+//#include <curl/curl.h>
 #include "server.h"
 
 /*
@@ -616,13 +618,14 @@ void SV_SpawnServer( char *server, qboolean killBots ) {
 	// don't allow a map_restart if game is modified
 	sv_gametype->modified = qfalse;
 
+	// RTCWPro - use game_init_frames and frametime
 	// run a few frames to allow everything to settle
-	for (i = 0;i < 3; i++)
+	for (i = 0;i < GAME_INIT_FRAMES; i++)
 	{
 		VM_Call (gvm, GAME_RUN_FRAME, sv.time);
 		SV_BotFrame (sv.time);
-		sv.time += 100;
-		svs.time += 100;
+		sv.time += FRAMETIME;
+		svs.time += FRAMETIME;
 	}
 
 	// create a baseline for more efficient communications
@@ -737,6 +740,10 @@ void SV_SpawnServer( char *server, qboolean killBots ) {
 		// restart renderer in order to show console for dedicated servers
 		// launched through the regular binary
 		CL_StartHunkUsers( qtrue );
+		
+		if (!sv_restRunning->integer) {
+			SV_SetCvarRestrictions();
+		}
 	}
 #endif
 
@@ -825,6 +832,56 @@ void SV_ParseVersionMapping( void ) {
 }
 #endif
 
+void SV_LoadModels(void) {
+	SV_LoadMDS(AXIS_MODEL_HANDLE, "models/players/multi_axis/body.mds");
+	SV_LoadMDS(ALLIED_MODEL_HANDLE, "models/players/multi/body.mds");
+}
+
+
+static size_t getIP_response(void *ptr, size_t size, size_t nmemb, void *stream){
+    Cvar_Set("sv_serverIP", va("%s",ptr));
+}
+
+void SV_GetIP(void) {
+/*  CURL *curl;
+  CURLcode res;
+
+  curl = curl_easy_init();
+  if(curl) {
+    curl_easy_setopt(curl, CURLOPT_URL, "http://api.ipify.org");
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, getIP_response);
+    res = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+  }
+*/
+}
+
+static size_t getCountry_response(void *ptr, size_t size, size_t nmemb, void *stream){
+    char out[3];
+    if (0<strlen(ptr)<=3) {
+        Q_strncpyz(out,ptr,3);   // quick and lazy way for dealing with the response...
+        Cvar_Set("sv_serverCountry", va("%s",out));
+    }
+    else {
+        Cvar_Set("sv_serverCountry", "??");   // bad response or unknown ip
+    }
+}
+
+void SV_GetCountry(char* serverIP) {
+/*  CURL *curl;
+  CURLcode res;
+
+  curl = curl_easy_init();
+  if(curl) {
+    curl_easy_setopt(curl, CURLOPT_URL, va("http://ipinfo.io/%s/country",serverIP));
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, getCountry_response);
+    res = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+  }
+*/
+}
+
+
 /*
 ===============
 SV_Init
@@ -847,6 +904,13 @@ void SV_Init( void ) {
 	// Rafael gameskill
 	sv_gameskill = Cvar_Get( "g_gameskill", "3", CVAR_SERVERINFO | CVAR_LATCH );
 	// done
+
+	//ServerIP and Server Country
+	SV_GetIP();
+	sv_serverIP = Cvar_Get("sv_serverIP", "", CVAR_LATCH);
+	SV_GetCountry(sv_serverIP->string);
+	sv_serverCountry = Cvar_Get("sv_serverCountry", "", CVAR_SERVERINFO | CVAR_ROM);
+    // end sIP/Country
 
 	Cvar_Get( "sv_keywords", "", CVAR_SERVERINFO );
 	sv_mapname = Cvar_Get( "mapname", "nomap", CVAR_SERVERINFO | CVAR_ROM );
@@ -958,6 +1022,22 @@ void SV_Init( void ) {
 	sv_dl_maxRate = Cvar_Get( "sv_dl_maxRate", "60000", CVAR_ARCHIVE );
 #endif
 
+	// Start RtcwPro
+
+
+	// Streaming
+	sv_StreamingToken = Cvar_Get("sv_StreamingToken", "0", CVAR_ARCHIVE);
+	sv_StreamingSelfSignedCert = Cvar_Get("sv_StreamingSelfSignedCert", "0", CVAR_ARCHIVE);
+
+	// Auth
+	sv_AuthEnabled = Cvar_Get("sv_AuthEnabled", "0", CVAR_SERVERINFO | CVAR_INIT);
+	sv_AuthStrictMode = Cvar_Get("sv_AuthStrictMode", "0", CVAR_SERVERINFO | CVAR_INIT);
+
+	// Cvar Restrictions
+	sv_GameConfig = Cvar_Get("sv_GameConfig", "", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_ROM); // | CVAR_LATCH );
+	sv_restRunning = Cvar_Get("sv_restRunning", "0", CVAR_INIT);
+
+	sv_checkVersion = Cvar_Get("sv_checkVersion", "15", CVAR_ROM);
 	// initialize bot cvars so they are listed and can be set before loading the botlib
 	SV_BotInitCvars();
 
@@ -1064,6 +1144,7 @@ void SV_Shutdown( char *finalmsg ) {
 	memset( &svs, 0, sizeof( svs ) );
 
 	Cvar_Set( "sv_running", "0" );
+	Cvar_Set("sv_restRunning", "0"); // RTCWPro
 
 	Com_Printf( "---------------------------\n" );
 

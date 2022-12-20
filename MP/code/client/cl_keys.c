@@ -60,6 +60,7 @@ typedef struct {
 } keyname_t;
 
 qboolean UI_checkKeyExec( int key );        // NERVE - SMF
+cvar_t* con_height; // RTCWPro - con height
 
 // names not in this list can either be lowercase ascii, or '0xnn' hex sequences
 keyname_t keynames[] =
@@ -2267,6 +2268,19 @@ void CL_KeyDownEvent( int key, unsigned time )
 	// console key is hardcoded, so the user can never unbind it
 	if( key == K_CONSOLE || ( keys[K_SHIFT].down && key == K_ESCAPE ) )
 	{
+
+		// RTCWPro - con height
+		con_height = Cvar_Get("con_height", "0.5", CVAR_ARCHIVE);	//called early, used as default (set by user)
+		Con_SetFrac(con_height->value);
+		if (key == (unsigned char)'`' || key == (unsigned char)'~')
+		{
+			if (keys[K_ALT].down)
+				Con_SetFrac(1.0f);
+			else if (keys[K_SHIFT].down)			// We use shift because CTRL doesn't want to work..
+				Con_SetFrac(.25f);
+		}
+		// con height end
+		
 		Con_ToggleConsole_f ();
 		Key_ClearStates ();
 		return;

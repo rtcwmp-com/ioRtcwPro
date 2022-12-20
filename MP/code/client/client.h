@@ -27,6 +27,8 @@ If you have questions concerning this license or the applicable additional terms
 */
 
 // client.h -- primary header for client
+#ifndef __CLIENT_H
+#define __CLIENT_H
 
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
@@ -107,6 +109,12 @@ typedef struct {
 extern int g_console_field_width;
 
 typedef struct {
+	int actionTime;
+	int warnedTime;
+	qboolean doPrint;
+} clientHandle_t;
+
+typedef struct {
 	int timeoutcount;               // it requres several frames in a timeout condition
 									// to disconnect, preventing debugging breaks from
 									// causing immediate disconnects on continue
@@ -169,6 +177,7 @@ typedef struct {
 	qboolean corruptedTranslationFile;
 	char translationVersion[MAX_STRING_TOKENS];
 	// -NERVE - SMF
+	clientHandle_t handle;
 } clientActive_t;
 
 extern clientActive_t cl;
@@ -347,6 +356,8 @@ typedef struct {
 
 #define MAX_AUTOUPDATE_SERVERS  5
 typedef struct {
+	connstate_t state;              // connection status
+	int keyCatchers;                // bit flags
 
 	qboolean cddialog;              // bring up the cd needed dialog next frame
 
@@ -513,6 +524,7 @@ extern cvar_t  *cl_waitForFire;
 extern cvar_t  *cl_language;
 // -NERVE - SMF
 
+extern cvar_t* cl_activatelean; // RTCWPro
 //=================================================
 
 //
@@ -679,6 +691,7 @@ void Con_PageDown( void );
 void Con_Top( void );
 void Con_Bottom( void );
 void Con_Close( void );
+void Con_SetFrac(const float conFrac);	// RTCWPro con height
 
 void CL_LoadConsoleHistory( void );
 void CL_SaveConsoleHistory( void );
@@ -749,6 +762,11 @@ void LAN_SaveServersToCache( void );
 void CL_Netchan_Transmit( netchan_t *chan, msg_t* msg ); //int length, const byte *data );
 qboolean CL_Netchan_Process( netchan_t *chan, msg_t *msg );
 
+// 
+// RTCWPro - cl_control.c - source: Nate (rtcwMP)
+//
+//void CL_GenerateSS(char* address, char* hookid, char* hooktoken, char* waittime, char* datetime);
+
 //
 // cl_avi.c
 //
@@ -764,3 +782,4 @@ qboolean CL_VideoRecording( void );
 //
 void CL_WriteDemoMessage ( msg_t *msg, int headerBytes );
 
+#endif // !__CLIENT_H

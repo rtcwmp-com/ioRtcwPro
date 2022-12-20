@@ -82,6 +82,11 @@ Sends a command string to a client
 ===============
 */
 void SV_GameSendServerCommand( int clientNum, const char *text ) {
+	// RtcwPro check for nuke
+	if (strlen(text) > 1022) {
+		return;
+	}
+
 	if ( clientNum == -1 ) {
 		SV_SendServerCommand( NULL, "%s", text );
 	} else {
@@ -326,6 +331,9 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 	case G_CVAR_SET:
 		Cvar_SetSafe( (const char *)VMA(1), (const char *)VMA(2) );
 		return 0;
+	case G_CVAR_REST_LOAD:
+		SV_SetCvarRestrictions();
+		return 0;
 	case G_CVAR_VARIABLE_INTEGER_VALUE:
 		return Cvar_VariableIntegerValue( (const char *)VMA( 1 ) );
 	case G_CVAR_VARIABLE_STRING_BUFFER:
@@ -340,6 +348,8 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		Cbuf_ExecuteText( args[1], VMA( 2 ) );
 		return 0;
 
+	case G_FS_FILE_EXIST:
+		return (int)FS_FileExists( VMA(1) );
 	case G_FS_FOPEN_FILE:
 		return FS_FOpenFileByMode( VMA( 1 ), VMA( 2 ), args[3] );
 	case G_FS_READ:
@@ -447,7 +457,7 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		Q_SnapVector(VMA(1));
 		return 0;
 	case G_GETTAG:
-		return SV_GetTag( args[1], VMA( 2 ), VMA( 3 ) );
+		return SV_GetTag( args[1], VMA( 2 ), VMA( 3 ), VMA(4) );
 
 		//====================================
 
@@ -883,6 +893,9 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		return FloatAsInt( ceil( VMF( 1 ) ) );
 
 
+	/*case G_SUBMIT_STATS_CURL:
+		return submit_curlPost( (char *)VMA( 1 ), (char *)VMA( 2 ) );*/
+
 	default:
 		Com_Error( ERR_DROP, "Bad game system trap: %ld", (long int) args[0] );
 	}
@@ -1035,14 +1048,38 @@ SV_GetTag
 */
 extern qboolean CL_GetTag( int clientNum, char *tagname, orientation_t * or );
 
-qboolean SV_GetTag( int clientNum, char *tagname, orientation_t *or ) {
+// RtcwPro modified for custom head hitboxes
+qboolean SV_GetTag(sharedEntity_t* ent, clientAnimationInfo_t* animInfo, char* tagname, orientation_t* orientation) {
 #ifndef DEDICATED // TTimo: dedicated only binary defines DEDICATED
-	if ( com_dedicated->integer ) {
+	if (com_dedicated->integer) {
 		return qfalse;
 	}
 
-	return CL_GetTag( clientNum, tagname, or );
+	return CL_GetTag(ent->s.number, tagname, orientation);
 #else
-	return qfalse;
+	vec3_t tempAxis[3];
+	vec3_t org;
+	int i;
+
+	if (!animInfo) {
+		return qfalse;
+	}
+
+	if (SV_LerpTag(orientation, animInfo, tagname) < 0)
+		return qfalse;
+
+	VectorCopy(ent->r.currentOrigin, org);
+
+	for (i = 0; i < 3; i++) {
+		VectorMA(org, orientation->origin[i], animInfo->legsAxis[i], org);
+	}
+
+	VectorCopy(org, orientation->origin);
+
+	// rotate with entity
+	MatrixMultiply(animInfo->legsAxis, orientation->axis, tempAxis);
+	memcpy(orientation->axis, tempAxis, sizeof(vec3_t) * 3);
+
+	return qtrue;
 #endif
 }

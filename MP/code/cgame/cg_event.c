@@ -145,7 +145,7 @@ static void CG_Obituary( entityState_t *ent ) {
 
 	switch ( mod ) {
 	case MOD_SUICIDE:
-		message = "committed suicide";
+		message = "killed himself";
 		break;
 	case MOD_FALLING:
 		message = "fell to his death";
@@ -179,44 +179,38 @@ static void CG_Obituary( entityState_t *ent ) {
 // JPW NERVE per atvi req
 		case MOD_DYNAMITE:
 		case MOD_DYNAMITE_SPLASH:
-			if ( gender == GENDER_FEMALE )
-				message = "dynamited herself to pieces";
-			else
-				message = "dynamited himself to pieces";
+			message = "dynamited himself to pieces";
 			break;
 // jpw
 		case MOD_GRENADE_SPLASH:
-			if ( gender == GENDER_FEMALE )
-				message = "dove on her own grenade";
-			else
-				message = "dove on his own grenade";
+			message = "dove on his own grenade";
 			break;
 		case MOD_ROCKET_SPLASH:
-			if ( gender == GENDER_FEMALE )
-				message = "vaporized herself";
-			else
-				message = "vaporized himself";
+			message = "vaporized himself";
 			break;
 		case MOD_AIRSTRIKE:
-			if ( gender == GENDER_FEMALE )
-				message = "obliterated herself";
-			else
-				message = "obliterated himself";
+			message = "obliterated himself";
 			break;
 			//case MOD_BFG_SPLASH:
 			//message = "should have used a smaller gun";
 			//break;
 		case MOD_EXPLOSIVE:
-			if ( gender == GENDER_FEMALE )
-				message = "died in her own explosion";
-			else
-				message = "died in his own explosion";
+			message = "died in his own explosion";
 			break;
+// RtcwPro - MODs
+		case MOD_ARTILLERY:			
+			message = "fired-for-effect on himself";
+			break;
+		case MOD_SWITCHTEAM:
+			return;
+		case MOD_SUICIDE:
+			message = "killed himself";
+			break;
+		case MOD_SELFKILL:
+			message = "slit his own throat";
+			break;			
 		default:
-			if ( gender == GENDER_FEMALE )
-				message = "killed herself";
-			else
-				message = "killed himself";
+			message = "killed himself";
 			break;
 		}
 	}
@@ -242,8 +236,19 @@ static void CG_Obituary( entityState_t *ent ) {
 				s = va( "%s %s", CG_TranslateString( "You killed" ), targetName );
 			}
 		}
-		CG_PriorityCenterPrint( s, SCREEN_HEIGHT * 0.75, BIGCHAR_WIDTH * 0.6, 1 );
+
+		// RTCWPro
+		if (cg_drawFrags.integer) {
+			if (cg_fragsY.integer) {
+				CG_PriorityCenterPrint(s, cg_fragsY.integer * 0.75, cg_fragsWidth.integer * 0.6, 1);
+			}
+			else {
+				CG_PriorityCenterPrint(s, SCREEN_HEIGHT * 0.75, cg_fragsWidth.integer * 0.6, 1);
+			}
+		}
+		//CG_PriorityCenterPrint(s, SCREEN_HEIGHT * 0.75, BIGCHAR_WIDTH * 0.6, 1);
 		// print the text message as well
+		// RTCWPro end
 	}
 
 	// check for double client messages
@@ -276,7 +281,7 @@ static void CG_Obituary( entityState_t *ent ) {
 			break;
 		case MOD_COLT:
 			message = "was killed by";
-			message2 = " 's .45ACP 1911";
+			message2 = "'s .45ACP 1911";
 			break;
 		case MOD_MP40:
 			message = "was killed by";
@@ -344,6 +349,11 @@ static void CG_Obituary( entityState_t *ent ) {
 		case MOD_AIRSTRIKE:
 			message = "was blasted by";
 			message2 = "'s support fire"; // JPW NERVE changed since it gets called for both air strikes and artillery
+			break;
+// RtcwPro
+		case MOD_ARTILLERY:
+			message = "was shelled by";
+			message2 = "'s artillery support";			
 			break;
 // jpw
 // (SA) leaving a sample of two part obit's
@@ -1838,11 +1848,24 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 
 	case EV_NOAMMO:
 		DEBUGNAME( "EV_NOAMMO" );
-		if ( ( es->weapon != WP_GRENADE_LAUNCHER ) && ( es->weapon != WP_GRENADE_PINEAPPLE ) && ( es->weapon != WP_DYNAMITE )  && ( es->weapon != WP_DYNAMITE2 ) ) {
+		if (	( es->weapon != WP_GRENADE_LAUNCHER ) && 
+				( es->weapon != WP_GRENADE_PINEAPPLE ) && 
+				( es->weapon != WP_DYNAMITE ) && 
+				( es->weapon != WP_DYNAMITE2 ) &&
+				( es->weapon != WP_AMMO ) &&
+				( es->weapon != WP_MEDKIT ) ) {
 			trap_S_StartSound( NULL, es->number, CHAN_AUTO, cgs.media.noAmmoSound );
 		}
-		if ( es->number == cg.snap->ps.clientNum ) {
-			CG_OutOfAmmoChange();
+		if ( es->number == cg.snap->ps.clientNum && (
+				 ( cg_noAmmoAutoSwitch.integer > 0 && !CG_WeaponSelectable( cg.weaponSelect ) ) ||
+				 es->weapon == WP_GRENADE_LAUNCHER ||
+				 es->weapon == WP_GRENADE_PINEAPPLE ||
+				 es->weapon == WP_DYNAMITE ||
+				 es->weapon == WP_PANZERFAUST ||
+				 //es->weapon == WP_AMMO || // RTCWPro
+				 es->weapon == WP_MEDKIT ||
+				 es->weapon == WP_SMOKE_GRENADE) ) {
+			CG_OutOfAmmoChange(qtrue); // event == EV_NOAMMO ? qfalse : qtrue);
 		}
 		break;
 	case EV_CHANGE_WEAPON:
@@ -2194,6 +2217,34 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 
 		break;
 		// dhm - end
+// RtcwPro
+	// Announcer sounds
+	case EV_ANNOUNCER_SOUND:
+		DEBUGNAME("EV_ANNOUNCER_SOUND");
+		if (cg_announcer.integer) {
+			// Ridah, check for a sound script
+			s = CG_ConfigString(CS_SOUNDS + es->eventParm);
+			if (!strstr(s, ".wav")) {
+				if (CG_SoundPlaySoundScript(s, NULL, es->number)) {
+					break;
+				}
+				// try with .wav
+				Q_strncpyz(tempStr, s, sizeof(tempStr));
+				Q_strcat(tempStr, sizeof(tempStr), ".wav");
+				s = tempStr;
+			}
+			// done.
+
+			if (cgs.gameSounds[es->eventParm]) {
+				trap_S_StartSound(NULL, cg.snap->ps.clientNum, CHAN_ANNOUNCER, cgs.gameSounds[es->eventParm]);
+			}
+			else {
+				s = CG_ConfigString(CS_SOUNDS + es->eventParm);
+				trap_S_StartSound(NULL, cg.snap->ps.clientNum, CHAN_ANNOUNCER, CG_CustomSound(es->number, s));
+			}
+		}
+		break;
+
 
 	case EV_PAIN:
 		// local player sounds are triggered in CG_CheckLocalSounds,

@@ -35,6 +35,11 @@ If you have questions concerning this license or the applicable additional terms
 #include <sys/stat.h>
 #endif
 
+// RTCWPro - moved from cg
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include "../sys/sys_local.h"
 #include "../sys/sys_loadlib.h"
 
@@ -150,7 +155,7 @@ cvar_t	*cl_guid;
 cvar_t	*cl_guidServerUniq;
 
 cvar_t	*cl_consoleKeys;
-
+cvar_t* cl_activatelean; // RTCWPro
 cvar_t	*cl_rate;
 
 clientActive_t cl;
@@ -1445,7 +1450,7 @@ static void CL_UpdateGUID( const char *prefix, int prefix_len )
 		return;
 	}
 
-	if ( !Q_stricmp( cl_guid->string, "unknown" ) )
+	if ( !Q_stricmp( cl_guid->string, NO_GUID ) )
 		Cvar_Set( "cl_guid", Com_PBMD5File( cl_cdkey ) );
 	else
 		return;
@@ -1473,6 +1478,7 @@ Sends a disconnect message to the server
 This is also called on Com_Error and Com_Quit, so it shouldn't cause any errors
 =====================
 */
+extern cvar_rest_t* cvar_rest_vars;
 void CL_Disconnect( qboolean showMainMenu ) {
 	if ( !com_cl_running || !com_cl_running->integer ) {
 		return;
@@ -1550,6 +1556,8 @@ void CL_Disconnect( qboolean showMainMenu ) {
 	// wipe the client connection
 	Com_Memset( &clc, 0, sizeof( clc ) );
 
+	// wipe any restricted cvars
+	Cvar_Rest_Reset();
 	clc.state = CA_DISCONNECTED;
 
 	// allow cheats locally
@@ -3798,6 +3806,50 @@ void CL_ClientDamageCommand( void ) {
 	// do nothing
 }
 
+/*
+==============
+CL_modURL_f
+
+RTCWPro
+==============
+*/
+void CL_modURL_f(void) {
+	Sys_OpenURL("https://rtcwpro.com/", qtrue);
+}
+
+/*
+==============
+CL_modSource_f
+
+RTCWPro
+==============
+*/
+void CL_modSource_f(void) {
+	Sys_OpenURL("https://github.com/rtcwmp-com/rtcwPro", qtrue);
+}
+
+/*
+================
+RTCWPro - minimizer (windows only)
+Source: http://forums.warchestgames.com/showthread.php/24040-CODE-Tutorial-Minimize-Et-(Only-Windoof)
+================
+*/
+static void CL_Minimize_f(void)
+{
+#ifdef _WIN32
+	HWND wnd;
+
+	wnd = GetForegroundWindow();
+	if (wnd)
+	{
+		ShowWindow(wnd, SW_MINIMIZE);
+	}
+#else
+	Com_Printf("ERROR: minimize command is not supported on this operating system.\n");
+#endif
+}
+
+
 #if defined (__i386__)
 #define BIN_STRING "x86"
 #endif
@@ -3845,6 +3897,17 @@ void CL_LoadTranslations_f( void ) {
 
 //===========================================================================================
 
+
+/*
+==============
+CL_EatMe_f
+
+Eat misc console commands to prevent exploits
+==============
+*/
+void CL_EatMe_f(void) {
+	//do nothing kthxbye
+}
 
 /*
 ===============
@@ -4037,6 +4100,8 @@ void CL_Init( void ) {
 #ifdef USE_CURL_DLOPEN
 	cl_cURLLib = Cvar_Get("cl_cURLLib", DEFAULT_CURL_LIB, CVAR_ARCHIVE | CVAR_PROTECTED);
 #endif
+	cl_activatelean = Cvar_Get("cl_activatelean", "1", CVAR_ARCHIVE);
+	Cvar_Get("cl_checkversion", "15", CVAR_ROM | CVAR_USERINFO);
 
 	// init autoswitch so the ui will have it correctly even
 	// if the cgame hasn't been started
@@ -4087,7 +4152,7 @@ void CL_Init( void ) {
 
 	cl_lanForcePackets = Cvar_Get ("cl_lanForcePackets", "1", CVAR_ARCHIVE);
 
-	cl_guid = Cvar_Get( "cl_guid", "unknown", CVAR_USERINFO | CVAR_ROM );
+	cl_guid = Cvar_Get( "cl_guid", NO_GUID, CVAR_USERINFO | CVAR_ROM );
 
 	cl_guidServerUniq = Cvar_Get ("cl_guidServerUniq", "1", CVAR_ARCHIVE);
 
@@ -4123,7 +4188,7 @@ void CL_Init( void ) {
 	// userinfo
 	Cvar_Get( "name", "WolfPlayer", CVAR_USERINFO | CVAR_ARCHIVE );
 	cl_rate = Cvar_Get( "rate", "25000", CVAR_USERINFO | CVAR_ARCHIVE );     // NERVE - SMF - changed from 3000
-	Cvar_Get( "snaps", "20", CVAR_USERINFO | CVAR_ARCHIVE );
+	Cvar_Get( "snaps", "40", CVAR_USERINFO | CVAR_ARCHIVE );
 	Cvar_Get( "model", "multi", CVAR_USERINFO | CVAR_ARCHIVE );
 	Cvar_Get( "head", "default", CVAR_USERINFO | CVAR_ARCHIVE );
 	Cvar_Get( "color", "4", CVAR_USERINFO | CVAR_ARCHIVE );
@@ -4156,6 +4221,9 @@ void CL_Init( void ) {
 //----(SA) added
 	Cvar_Get( "cg_autoactivate", "1", CVAR_USERINFO | CVAR_ARCHIVE );
 //----(SA) end
+
+	// RTCWPro
+	Cvar_Get("cg_antilag", "1", CVAR_USERINFO | CVAR_ARCHIVE);
 
 	// cgame might not be initialized before menu is used
 	Cvar_Get( "cg_viewsize", "100", CVAR_ARCHIVE );
@@ -4233,6 +4301,13 @@ void CL_Init( void ) {
 
 	Cmd_AddCommand( "setRecommended", CL_SetRecommended_f );
 
+	Cmd_AddCommand("openModURL", CL_modURL_f); // RTCWPro
+	Cmd_AddCommand("openModSource", CL_modSource_f); // RTCWPro
+	Cmd_AddCommand("minimize", CL_Minimize_f); // RTCWPro - moved from cg
+
+	//bani - we eat these commands to prevent exploits
+	Cmd_AddCommand("userinfo", CL_EatMe_f);
+
 	CL_InitRef();
 
 	SCR_Init();
@@ -4240,6 +4315,8 @@ void CL_Init( void ) {
 //	Cbuf_Execute();
 
 	Cvar_Set( "cl_running", "1" );
+	// RTCWPro
+	Cvar_Set("cl_checkversion", "15");
 
 	// DHM - Nerve
 	autoupdateChecked = qfalse;

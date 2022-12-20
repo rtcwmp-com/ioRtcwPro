@@ -300,12 +300,34 @@ static void CG_DrawPlayerWeaponIcon( rectDef_t *rect, qboolean drawHighlighted, 
 		return;
 	}
 
-	if ( drawHighlighted ) {
-		icon = cg_weapons[ realweap ].weaponIcon[1];
-	} else {
-		icon = cg_weapons[ realweap ].weaponIcon[0];
+	// RtcwPro - Weapon highlight
+	if (cg_drawWeaponIconFlash.integer) {
+		if (cg.snap->ps.weaponstate == WEAPON_RELOADING) {
+			VectorCopy(colorYellow, hcolor);
+			icon = cg_weapons[realweap].weaponIcon[1];
+		}
+		else if (cg.snap->ps.weaponstate == WEAPON_FIRING)   {
+			VectorCopy(colorRed, hcolor);
+			icon = cg_weapons[realweap].weaponIcon[1];
+		}
+		else if (cg.snap->ps.weaponstate == WEAPON_READY)    {
+			VectorCopy(colorYellow, hcolor);
+			icon = cg_weapons[realweap].weaponIcon[0];
+		}
+		else {
+			VectorCopy(colorWhite, hcolor);
+			icon = cg_weapons[realweap].weaponIcon[1];
+		}
+		hcolor[3] = 4.0f;
+	} // Just wrap default ..
+	else {
+		if (drawHighlighted) {
+			icon = cg_weapons[realweap].weaponIcon[1];
+		}
+		else {
+			icon = cg_weapons[realweap].weaponIcon[0];
+		}
 	}
-
 
 
 	// pulsing grenade icon to help the player 'count' in their head
@@ -1094,12 +1116,16 @@ static void CG_DrawPlayerHealth( rectDef_t *rect, float scale, vec4_t color, qha
 	vec4_t color2;
 
 	ps = &cg.snap->ps;
-
+/*
 	if ( cgs.gametype >= GT_WOLF && ( ps->pm_flags & PMF_FOLLOW ) ) {
-		value = cgs.clientinfo[ ps->clientNum ].health;
+        value = cgs.clientinfo[ ps->clientNum ].health;
 	} else {
 		value = ps->stats[STAT_HEALTH];
 	}
+*/
+    // RtcwPro nihi: The above results in spectators seeing 0 health for players they are following.
+    //       If that is desired then we may want to create a cvar to turn this feature 'on/off'
+	value = ps->stats[STAT_HEALTH];
 
 	// DHM - Nerve :: Don't show negative health
 	if ( value < 0 ) {
@@ -1522,12 +1548,14 @@ float CG_GetValue( int ownerDraw, int type ) {
 		return cg.snap->ps.persistant[PERS_SCORE];
 		break;
 	case CG_PLAYER_HEALTH:
+	    /* RtcwPro
 		if ( cgs.gametype >= GT_WOLF && ( ps->pm_flags & PMF_FOLLOW ) ) {
 			ci = &cgs.clientinfo[ ps->clientNum ];
 			return ci->health;
 		} else {
 			return ps->stats[STAT_HEALTH];
-		}
+		}*/
+		return ps->stats[STAT_HEALTH];
 		break;
 	case CG_RED_SCORE:
 		return cgs.scores1;
@@ -2561,10 +2589,29 @@ void CG_OwnerDraw( float x, float y, float w, float h, float text_x, float text_
 void CG_MouseEvent( int x, int y ) {
 	int n;
 
-	if ( ( cg.predictedPlayerState.pm_type == PM_NORMAL || cg.predictedPlayerState.pm_type == PM_SPECTATOR ) && cg.showScores == qfalse ) {
-		trap_Key_SetCatcher( 0 );
-		return;
-	}
+	switch (cgs.eventHandling) {
+	case CGAME_EVENT_DEMO:
+		cgs.cursorX += x;
+		if (cgs.cursorX < 0) {
+			cgs.cursorX = 0;
+		}
+		else if (cgs.cursorX > 640) {
+			cgs.cursorX = 640;
+		}
+		cgs.cursorY += y;
+		if (cgs.cursorY < 0) {
+			cgs.cursorY = 0;
+		}
+		else if (cgs.cursorY > 480) {
+			cgs.cursorY = 480;
+		}
+		break;
+		default:
+			if ((cg.predictedPlayerState.pm_type == PM_NORMAL ||
+				cg.predictedPlayerState.pm_type == PM_SPECTATOR) && cg.showScores == qfalse) {
+				trap_Key_SetCatcher(trap_Key_GetCatcher() & ~KEYCATCH_CGAME);
+			return;
+		}
 
 	cgs.cursorX += x;
 	if ( cgs.cursorX < 0 ) {
@@ -2593,7 +2640,8 @@ void CG_MouseEvent( int x, int y ) {
 	} else {
 		Display_MouseMove( NULL, cgs.cursorX, cgs.cursorY );
 	}
-
+		break;
+	}
 }
 
 /*
@@ -2629,15 +2677,32 @@ CG_EventHandling
 	  2 - hud editor
 
 */
-void CG_EventHandling( int type ) {
-	cgs.eventHandling = type;
-	if ( type == CGAME_EVENT_NONE ) {
-		CG_HideTeamMenu();
-	} else if ( type == CGAME_EVENT_TEAMMENU ) {
-		//CG_ShowTeamMenu();
-	} else if ( type == CGAME_EVENT_SCOREBOARD ) {
+void CG_EventHandling( int type, qboolean forced ) {
+	if (cg.demoPlayback && type == CGAME_EVENT_NONE && !forced) {
+		type = CGAME_EVENT_DEMO;
 	}
 
+	if (type != CGAME_EVENT_NONE) {
+		trap_Cvar_Set("cl_bypassMouseInput", 0);
+	}
+
+	switch (type) {
+	/*case CGAME_EVENT_DEMO:
+		CG_ScoresUp_f();
+		break;*/
+	case CGAME_EVENT_NONE:
+		CG_HideTeamMenu();
+		break;
+	case CGAME_EVENT_TEAMMENU:
+	case CGAME_EVENT_SCOREBOARD:
+		break;
+	}
+
+	cgs.eventHandling = type;
+
+	if (type == CGAME_EVENT_NONE) {
+		trap_Key_SetCatcher(trap_Key_GetCatcher() & ~KEYCATCH_CGAME);
+	}
 }
 
 void CG_KeyEvent( int key, qboolean down ) {
@@ -2646,8 +2711,15 @@ void CG_KeyEvent( int key, qboolean down ) {
 		return;
 	}
 
+	switch (cgs.eventHandling) {
+	// RtcwPro - Demo..
+	case CGAME_EVENT_DEMO:
+		CG_DemoClick(key);
+		return;
+	}
+
 	if ( cg.predictedPlayerState.pm_type == PM_NORMAL || ( cg.predictedPlayerState.pm_type == PM_SPECTATOR && cg.showScores == qfalse ) ) {
-		CG_EventHandling( CGAME_EVENT_NONE );
+		CG_EventHandling( CGAME_EVENT_NONE, qfalse );
 		trap_Key_SetCatcher( 0 );
 		return;
 	}
@@ -2671,10 +2743,14 @@ void CG_KeyEvent( int key, qboolean down ) {
 
 // prevent centerview exploits
 qboolean CG_CheckCenterView() {
-	if ( cg.pmext.blockCenterViewTime && cg.time < cg.pmext.blockCenterViewTime ) {
+	
+	// RtcwPro always return false we do not want centerview
+	return qfalse;
+
+	/*if ( cg.pmext.blockCenterViewTime && cg.time < cg.pmext.blockCenterViewTime ) {
 		return qfalse;
 	}
-	return qtrue;
+	return qtrue;*/
 }
 
 int CG_ClientNumFromName( const char *p ) {

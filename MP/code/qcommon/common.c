@@ -315,6 +315,9 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 	if (code != ERR_DISCONNECT && code != ERR_NEED_CD)
 		Cvar_Set( "com_errorMessage", com_errorMessage );
 
+	// RtcwPro / Fixes the issue with modal boxes when Bloom is enabled.
+	//clientIsConnected = qfalse;
+	
 	restartClient = com_gameClientRestarting && !( com_cl_running && com_cl_running->integer );
 
 	com_gameRestarting = qfalse;

@@ -624,6 +624,18 @@ void CG_PredictPlayerState( void ) {
 	cg_pmove.pmove_fixed = pmove_fixed.integer; // | cg_pmove_fixed.integer;
 	cg_pmove.pmove_msec = pmove_msec.integer;
 
+	// RTCWPro - fixed physics
+	if (cg_fixedphysicsfps.integer)
+	{
+		if (cg_fixedphysicsfps.integer > 333)
+		{
+			trap_Cvar_Set("g_fixedphysicsfps", "333");
+		}
+
+		cg_pmove.fixedphysicsfps = cg_fixedphysicsfps.integer;
+	}
+	// RTCWPro end
+
 //----(SA)	added
 	// restore persistant client-side playerstate variables before doing the pmove
 	// this could be done as suggested in q_shared.h ~line 1404, but right now I copy each variable individually
@@ -725,6 +737,11 @@ void CG_PredictPlayerState( void ) {
 
 		if ( cg_pmove.pmove_fixed ) {
 			cg_pmove.cmd.serverTime = ( ( cg_pmove.cmd.serverTime + pmove_msec.integer - 1 ) / pmove_msec.integer ) * pmove_msec.integer;
+		}
+
+		// ydnar: if server respawning, freeze the player
+		if (cg.serverRespawning) {
+			cg_pmove.ps->pm_type = PM_FREEZE;
 		}
 
 		// RF, if waiting for mission stats to go, ignore all input

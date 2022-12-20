@@ -1596,3 +1596,78 @@ char *Com_SkipTokens( char *s, int numTokens, char *sep )
 	else
 		return s;
 }
+
+
+
+/*
+==================
+Q_isBadDirChar - RtcwPro
+
+Strips whitespaces and bad characters
+==================
+*/
+qboolean Q_isBadDirChar(char c) {
+	char badchars[] = {';', '&', '(', ')', '|', '<', '>', '*', '?', '[', ']', '~', '+', '@', '!', '\\', '/', ' ', '\'', '\"', '\0'};
+	int i;
+
+	for (i = 0; badchars[i] != '\0'; i++) {
+		if (c == badchars[i]) {
+			return qtrue;
+		}
+	}
+
+	return qfalse;
+}
+
+/*
+==================
+Q_CleanDirName - RtcwPro
+==================
+*/
+char* Q_CleanDirName(char* dirname) {
+	char* d;
+	char* s;
+
+	s = dirname;
+	d = dirname;
+
+	// clear trailing .'s
+	while (*s == '.') {
+		s++;
+	}
+
+	while (*s != '\0') {
+		if (!Q_isBadDirChar(*s)) {
+			*d++ = *s;
+		}
+		s++;
+	}
+	*d = '\0';
+
+	return dirname;
+}
+
+/*
+==================
+Q_IsNumeric - RtcwPro
+
+Float and Int will be considered valid.
+==================
+*/
+qboolean Q_IsNumeric(const char* s) {
+
+	if (!s || strlen(s) < 1) {
+		return qfalse;
+	}
+
+	while (*s) {
+		if (*s == '.'|| *s == '-') {
+			*s++;
+
+			continue;
+		}
+		else if ((isdigit(*s++) == 0))
+			return qfalse;
+	}
+	return qtrue;
+}

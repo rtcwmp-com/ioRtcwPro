@@ -30,6 +30,7 @@ If you have questions concerning this license or the applicable additional terms
 // string allocation/managment
 
 #include "ui_shared.h"
+//#include "ui_local.h"    // For CS settings/retrieval
 
 #define SCROLL_TIME_START                   500
 #define SCROLL_TIME_ADJUST              150
@@ -55,6 +56,46 @@ static itemDef_t *itemCapture = NULL;   // item that has the mouse captured ( if
 
 displayContextDef_t *DC = NULL;
 
+void Tooltip_Initialize( itemDef_t *item ) {
+	item->text = NULL;
+	item->font = UI_FONT_SMALL;
+	item->textalignx = 3;
+	item->textaligny = 10;
+	item->textscale = .2f;
+	item->window.border = WINDOW_BORDER_FULL;
+	item->window.borderSize = 1.f;
+	item->window.flags &= ~WINDOW_VISIBLE;
+	item->window.flags |= ( WINDOW_DRAWALWAYSONTOP | WINDOW_AUTOWRAPPED );
+	Vector4Set( item->window.backColor, .9f, .9f, .75f, 1.f );
+	Vector4Set( item->window.borderColor, 0.f, 0.f, 0.f, 1.f );
+	Vector4Set( item->window.foreColor, 0.f, 0.f, 0.f, 1.f );
+}
+
+void Tooltip_ComputePosition( itemDef_t *item ) {
+	_Rectangle *itemRect = &item->window.rectClient;
+	_Rectangle *tipRect = &item->toolTipData->window.rectClient;
+
+	DC->textFont( item->toolTipData->font );
+
+	// Set positioning based on item location
+	tipRect->x = itemRect->x + ( itemRect->w / 3 );
+	tipRect->y = itemRect->y + itemRect->h + 8;
+	//tipRect->h = 14.0f;
+	//tipRect->w = DC->textWidth( item->toolTipData->text, item->toolTipData->textscale, 0 ) + 6.0f;
+	tipRect->h = DC->multiLineTextHeight( item->toolTipData->text, item->toolTipData->textscale, 0 ) + 9.f;
+	tipRect->w = DC->multiLineTextWidth( item->toolTipData->text, item->toolTipData->textscale, 0 ) + 6.f;
+	if ( ( tipRect->w + tipRect->x ) > 635.0f ) {
+		tipRect->x -= ( tipRect->w + tipRect->x ) - 635.0f;
+	}
+
+	item->toolTipData->parent = item->parent;
+	item->toolTipData->type = ITEM_TYPE_TEXT;
+	item->toolTipData->window.style = WINDOW_STYLE_FILLED;
+	item->toolTipData->window.flags |= WINDOW_VISIBLE;
+}
+
+
+
 qboolean g_waitingForKey = qfalse;
 qboolean g_editingField = qfalse;
 
@@ -74,6 +115,8 @@ static qboolean debugMode = qfalse;
 
 #define DOUBLE_CLICK_DELAY 300
 static int lastListBoxClickTime = 0;
+void Item_MouseLeave(itemDef_t* item);
+void Item_SetMouseOver(itemDef_t* item, qboolean focus);
 
 void Item_RunScript( itemDef_t *item, const char *s );
 void Item_SetupKeywordHash( void );
@@ -994,8 +1037,13 @@ itemDef_t *Menu_ClearFocus( menuDef_t *menu ) {
 	for ( i = 0; i < menu->itemCount; i++ ) {
 		if ( menu->items[i]->window.flags & WINDOW_HASFOCUS ) {
 			ret = menu->items[i];
+			menu->items[i]->window.flags &= ~WINDOW_HASFOCUS;
 		}
-		menu->items[i]->window.flags &= ~WINDOW_HASFOCUS;
+
+		if (menu->items[i]->window.flags & WINDOW_MOUSEOVER) {
+			Item_MouseLeave(menu->items[i]);
+			Item_SetMouseOver(menu->items[i], qfalse);
+		}
 		if ( menu->items[i]->leaveFocus ) {
 			Item_RunScript( menu->items[i], menu->items[i]->leaveFocus );
 		}
@@ -1263,30 +1311,42 @@ static void Menu_RunCloseScript( menuDef_t *menu ) {
 }
 
 void Menus_CloseByName( const char *p ) {
-	menuDef_t *menu = Menus_FindByName( p );
-	if ( menu != NULL ) {
-		Menu_RunCloseScript( menu );
-		menu->window.flags &= ~( WINDOW_VISIBLE | WINDOW_HASFOCUS );
-		if ( menu->window.flags & WINDOW_MODAL ) {
-			if ( modalMenuCount <= 0 ) {
-				Com_Printf( S_COLOR_YELLOW "WARNING: tried closing a modal window with an empty modal stack!\n" );
-			} else
-			{
+	menuDef_t* menu = Menus_FindByName(p);
+	if (menu != NULL) {
+		int i;
+
+		// Gordon: make sure no edit fields are left hanging
+		for (i = 0; i < menu->itemCount; i++) {
+			if (g_editItem == menu->items[i]) {
+				g_editingField = qfalse;
+				g_editItem = NULL;
+			}
+		}
+
+		menu->cursorItem = -1;
+		Menu_ClearFocus(menu);
+		Menu_RunCloseScript(menu);
+		menu->window.flags &= ~(WINDOW_VISIBLE | WINDOW_HASFOCUS | WINDOW_MOUSEOVER);
+		if (menu->window.flags & WINDOW_MODAL) {
+			if (modalMenuCount <= 0) {
+				Com_Printf(S_COLOR_YELLOW "WARNING: tried closing a modal window with an empty modal stack!\n");
+			}
+			else {
 				modalMenuCount--;
 				// if modal doesn't have a parent, the stack item may be NULL .. just go back to the main menu then
-				if ( modalMenuStack[modalMenuCount] ) {
-					Menus_ActivateByName( modalMenuStack[modalMenuCount]->window.name, qfalse ); // don't try to push the one we are opening to the stack
+				if (modalMenuStack[modalMenuCount]) {
+					Menus_ActivateByName(modalMenuStack[modalMenuCount]->window.name, qfalse); // don't try to push the one we are opening to the stack
 				}
 			}
 		}
 	}
 }
 
-void Menus_CloseAll(void) {
+void Menus_CloseAll() {
 	int i;
 	for ( i = 0; i < menuCount; i++ ) {
 		Menu_RunCloseScript( &Menus[i] );
-		Menus[i].window.flags &= ~( WINDOW_HASFOCUS | WINDOW_VISIBLE );
+		Menus[i].window.flags &= ~( WINDOW_HASFOCUS | WINDOW_VISIBLE | WINDOW_MOUSEOVER);
 	}
 }
 
@@ -1328,21 +1388,73 @@ void Script_Open( itemDef_t *item, char **args ) {
 	}
 }
 
+void Menu_FadeMenuByName(const char* p, qboolean fadeOut) {
+	itemDef_t* item;
+	int i;
+	menuDef_t* menu = Menus_FindByName(p);
+
+	if (menu) {
+		for (i = 0; i < menu->itemCount; i++) {
+			item = menu->items[i];
+			if (fadeOut) {
+				item->window.flags |= (WINDOW_FADINGOUT | WINDOW_VISIBLE);
+				item->window.flags &= ~WINDOW_FADINGIN;
+			}
+			else {
+				item->window.flags |= (WINDOW_VISIBLE | WINDOW_FADINGIN);
+				item->window.flags &= ~WINDOW_FADINGOUT;
+			}
+		}
+	}
+}
+
+void Script_FadeInMenu(itemDef_t* item, char** args) {
+	const char* name = NULL;
+	if (String_Parse(args, &name)) {
+		Menu_FadeMenuByName(name, qfalse);
+	}
+}
+
+void Script_FadeOutMenu(itemDef_t* item, char** args) {
+	const char* name = NULL;
+	if (String_Parse(args, &name)) {
+		Menu_FadeMenuByName(name, qtrue);
+	}
+}
+
 // DHM - Nerve
 
 void Script_ConditionalOpen( itemDef_t *item, char **args ) {
-	const char *cvar;
-	const char *name1;
-	const char *name2;
+	const char* cvar = NULL;
+	const char* name1 = NULL;
+	const char* name2 = NULL;
 	float val;
+	char buff[1024];
+	int testtype;         // 0: check val not 0
+	// 1: check cvar not empty
 
-	if ( String_Parse( args, &cvar ) && String_Parse( args, &name1 ) && String_Parse( args, &name2 ) ) {
+	if (String_Parse(args, &cvar) && Int_Parse(args, &testtype) && String_Parse(args, &name1) && String_Parse(args, &name2)) {
 
-		val = DC->getCVarValue( cvar );
-		if ( val == 0.f ) {
-			Menus_OpenByName( name2 );
-		} else {
-			Menus_OpenByName( name1 );
+		switch (testtype) {
+			default:
+			case 0:
+			val = DC->getCVarValue(cvar);
+			if (val == 0.f) {
+				Menus_OpenByName(name2);
+			}
+			else {
+				Menus_OpenByName(name1);
+			}
+			break;
+			case 1:
+			DC->getCVarString(cvar, buff, sizeof(buff));
+			if (!buff[0]) {
+				Menus_OpenByName(name2);
+			}
+			else {
+				Menus_OpenByName(name1);
+			}
+			break;
 		}
 	}
 }
@@ -1356,8 +1468,275 @@ void Script_Close( itemDef_t *item, char **args ) {
 	}
 }
 
+void Script_CloseAll(itemDef_t* item, char** args) {
+	Menus_CloseAll();
+}
 
+void Script_CloseAllOtherMenus(itemDef_t* item, char** args) {
+	int i;
+	for (i = 0; i < menuCount; i++) {
+		if (&Menus[i] == item->parent) {
+			continue;
+		}
+		Menu_RunCloseScript(&Menus[i]);
+		Menus[i].window.flags &= ~(WINDOW_HASFOCUS | WINDOW_VISIBLE | WINDOW_MOUSEOVER);
+	}
+}
 
+// RtcwPro - New stuff
+void Script_ConditionalScript(itemDef_t* item, char** args) {
+	const char* cvar;
+	const char* script1;
+	const char* script2;
+	const char* token;
+	float val;
+	char buff[1024];
+	int testtype;         // 0: check val not 0
+	// 1: check cvar not empty
+	int testval;
+
+	if (String_Parse(args, &cvar) &&
+		Int_Parse(args, &testtype) &&
+		String_Parse(args, &token) && (token && *token == '(') &&
+		String_Parse(args, &script1) &&
+		String_Parse(args, &token) && (token && *token == ')') &&
+		String_Parse(args, &token) && (token && *token == '(') &&
+		String_Parse(args, &script2) &&
+		String_Parse(args, &token) && (token && *token == ')')) {
+
+		switch (testtype) {
+			default:
+			case 0:
+			val = DC->getCVarValue(cvar);
+			if (val == 0.f) {
+				Item_RunScript(item, script2);
+			}
+			else {
+				Item_RunScript(item, script1);
+			}
+			break;
+			case 1:
+			DC->getCVarString(cvar, buff, sizeof(buff));
+			if (!buff[0]) {
+				Item_RunScript(item, script2);
+			}
+			else {
+				Item_RunScript(item, script1);
+			}
+			break;
+			case 3:
+			if (Int_Parse(args, &testval)) {
+				val = DC->getCVarValue(cvar);
+				if (val != testval) {
+					Item_RunScript(item, script2);
+				}
+				else {
+					Item_RunScript(item, script1);
+				}
+			}
+			break;
+			case 2:
+			// special tests
+			if (!Q_stricmp(cvar, "UIProfileIsActiveProfile")) {
+				char ui_profileStr[256];
+				char cl_profileStr[256];
+
+				DC->getCVarString("ui_profile", ui_profileStr, sizeof(ui_profileStr));
+				Q_CleanStr(ui_profileStr);
+				Q_CleanDirName(ui_profileStr);
+
+				DC->getCVarString("cl_profile", cl_profileStr, sizeof(cl_profileStr));
+
+				if (!Q_stricmp(ui_profileStr, cl_profileStr)) {
+					Item_RunScript(item, script1);
+				}
+				else {
+					Item_RunScript(item, script2);
+				}
+			}
+			else if (!Q_stricmp(cvar, "UIProfileValidName")) {
+				char ui_profileStr[256];
+				char ui_profileCleanedStr[256];
+
+				DC->getCVarString("ui_profile", ui_profileStr, sizeof(ui_profileStr));
+				Q_strncpyz(ui_profileCleanedStr, ui_profileStr, sizeof(ui_profileCleanedStr));
+				Q_CleanStr(ui_profileCleanedStr);
+				Q_CleanDirName(ui_profileCleanedStr);
+
+				if (*ui_profileStr && *ui_profileCleanedStr) {
+					Item_RunScript(item, script1);
+				}
+				else {
+					Item_RunScript(item, script2);
+				}
+
+			}
+			else if (!Q_stricmp(cvar, "UIProfileAlreadyExists")) {
+				char ui_profileCleanedStr[256];
+				qboolean alreadyExists = qfalse;
+				fileHandle_t f;
+
+				DC->getCVarString("ui_profile", ui_profileCleanedStr, sizeof(ui_profileCleanedStr));
+				Q_CleanStr(ui_profileCleanedStr);
+				Q_CleanDirName(ui_profileCleanedStr);
+
+				if (trap_FS_FOpenFile(va("profiles/%s/profile.dat", ui_profileCleanedStr), &f, FS_READ) >= 0) {
+					alreadyExists = qtrue;
+					trap_FS_FCloseFile(f);
+				}
+
+				if (alreadyExists) {
+					Item_RunScript(item, script1);
+				}
+				else {
+					Item_RunScript(item, script2);
+				}
+			}
+			else if (!Q_stricmp(cvar, "UIProfileAlreadyExists_Rename")) {
+				char ui_profileCleanedStr[256];
+				qboolean alreadyExists = qfalse;
+				fileHandle_t f;
+
+				DC->getCVarString("ui_profile_renameto", ui_profileCleanedStr, sizeof(ui_profileCleanedStr));
+				Q_CleanStr(ui_profileCleanedStr);
+				Q_CleanDirName(ui_profileCleanedStr);
+
+				if (trap_FS_FOpenFile(va("profiles/%s/profile.dat", ui_profileCleanedStr), &f, FS_READ) >= 0) {
+					alreadyExists = qtrue;
+					trap_FS_FCloseFile(f);
+				}
+
+				if (alreadyExists) {
+					Item_RunScript(item, script1);
+				}
+				else {
+					Item_RunScript(item, script2);
+				}
+			}
+			else if (!Q_stricmp(cvar, "ReadyToCreateProfile")) {
+				char ui_profileStr[256], ui_profileCleanedStr[256];
+				int ui_rate;
+				qboolean alreadyExists = qfalse;
+				fileHandle_t f;
+
+				DC->getCVarString("ui_profile", ui_profileStr, sizeof(ui_profileStr));
+
+				Q_strncpyz(ui_profileCleanedStr, ui_profileStr, sizeof(ui_profileCleanedStr));
+				Q_CleanStr(ui_profileCleanedStr);
+				Q_CleanDirName(ui_profileCleanedStr);
+
+				if (trap_FS_FOpenFile(va("profiles/%s/profile.dat", ui_profileCleanedStr), &f, FS_READ) >= 0) {
+					alreadyExists = qtrue;
+					trap_FS_FCloseFile(f);
+				}
+
+				ui_rate = (int)DC->getCVarValue("ui_rate");
+
+				if (!alreadyExists && *ui_profileStr && ui_rate > 0) {
+					Item_RunScript(item, script1);
+				}
+				else {
+					Item_RunScript(item, script2);
+				}
+			}
+			else if (!Q_stricmp(cvar, "vidrestartIsRequired")) {
+				int ui_r_mode = DC->getCVarValue("ui_r_mode");
+				int ui_r_colorbits = DC->getCVarValue("ui_r_colorbits");
+				int ui_r_fullscreen = DC->getCVarValue("ui_r_fullscreen");
+				int ui_r_texturebits = DC->getCVarValue("ui_r_texturebits");
+				int ui_r_depthbits = DC->getCVarValue("ui_r_depthbits");
+				int ui_r_ext_compressed_textures = DC->getCVarValue("ui_r_ext_compressed_textures");
+				int ui_r_allowextensions = DC->getCVarValue("ui_r_allowextensions");
+				int ui_s_khz = DC->getCVarValue("ui_s_khz");
+				int ui_r_detailtextures = DC->getCVarValue("ui_r_detailtextures");
+				int ui_r_subdivisions = DC->getCVarValue("ui_r_subdivisions");
+				char ui_r_texturemode[MAX_CVAR_VALUE_STRING];
+
+				int r_mode = DC->getCVarValue("r_mode");
+				int r_colorbits = DC->getCVarValue("r_colorbits");
+				int r_fullscreen = DC->getCVarValue("r_fullscreen");
+				int r_texturebits = DC->getCVarValue("r_texturebits");
+				int r_depthbits = DC->getCVarValue("r_depthbits");
+				int r_ext_compressed_textures = DC->getCVarValue("r_ext_compressed_textures");
+				int r_allowextensions = DC->getCVarValue("r_allowextensions");
+				int s_khz = DC->getCVarValue("s_khz");
+				int r_detailtextures = DC->getCVarValue("r_detailtextures");
+				int r_subdivisions = DC->getCVarValue("r_subdivisions");
+				char r_texturemode[MAX_CVAR_VALUE_STRING];
+
+				trap_Cvar_VariableStringBuffer("ui_r_texturemode", ui_r_texturemode, sizeof(ui_r_texturemode));
+				trap_Cvar_VariableStringBuffer("r_texturemode", r_texturemode, sizeof(r_texturemode));
+
+				if (ui_r_subdivisions != r_subdivisions ||
+					ui_r_mode != r_mode ||
+					ui_r_colorbits != r_colorbits ||
+					ui_r_fullscreen != r_fullscreen ||
+					ui_r_texturebits != r_texturebits ||
+					ui_r_depthbits != r_depthbits ||
+					ui_r_ext_compressed_textures != r_ext_compressed_textures ||
+					ui_r_allowextensions != r_allowextensions ||
+					ui_s_khz != s_khz ||
+					ui_r_detailtextures != r_detailtextures ||
+					Q_stricmp(r_texturemode, ui_r_texturemode)) {
+					Item_RunScript(item, script1);
+				}
+				else {
+					Item_RunScript(item, script2);
+				}
+				/*} else if( !Q_stricmpn( cvar, "voteflags", 9 ) ) {
+				char info[MAX_INFO_STRING];
+				int voteflags = atoi(cvar + 9);
+
+				trap_Cvar_VariableStringBuffer( "cg_ui_voteFlags", info, sizeof(info) );
+
+				if( (atoi(info) & item->voteFlag) != item->voteFlag ) {
+				Item_RunScript( item, script1 );
+				} else {
+				Item_RunScript( item, script2 );
+				}*/
+/*#ifndef CGAMEDLL
+			}
+			else if (!Q_stricmpn(cvar, "serversort_", 11)) {
+				int sorttype = atoi(cvar + 11);
+
+				if (sorttype != uiInfo.serverStatus.sortKey) {
+					Item_RunScript(item, script2);
+				}
+				else {
+					Item_RunScript(item, script1);
+				}
+			}
+			else if (!Q_stricmp(cvar, "ValidReplaySelected")) {
+				if (uiInfo.demoIndex >= 0 && uiInfo.demoIndex < uiInfo.demoCount) {
+					Item_RunScript(item, script1);
+				}
+				else {
+					Item_RunScript(item, script2);
+				}
+#endif // !CGAMEDLL*/
+			}
+			else if (!Q_stricmp(cvar, "ROldModeCheck")) {
+				char r_oldModeStr[256];
+				int r_oldMode;
+				int r_mode = DC->getCVarValue("r_mode");
+
+				DC->getCVarString("r_oldMode", r_oldModeStr, sizeof(r_oldModeStr));
+				r_oldMode = atoi(r_oldModeStr);
+
+				if (*r_oldModeStr && r_oldMode != r_mode) {
+					Item_RunScript(item, script1);
+				}
+				else {
+					if (r_oldMode == r_mode) {
+						trap_Cvar_Set("r_oldMode", ""); // clear it
+					}
+					Item_RunScript(item, script2);
+				}
+			}
+			break;
+		}
+	}
+}
 
 /*
 ==============
@@ -1601,6 +1980,16 @@ void Script_SetCvar( itemDef_t *item, char **args ) {
 	}
 }
 
+void Script_CopyCvar(itemDef_t* item, char** args) {
+	const char* cvar_src = NULL, * cvar_dst = NULL;
+	if (String_Parse(args, &cvar_src) && String_Parse(args, &cvar_dst)) {
+		char buff[256];
+
+		DC->getCVarString(cvar_src, buff, 256);
+		DC->setCVar(cvar_dst, buff);
+	}
+}
+
 void Script_Exec( itemDef_t *item, char **args ) {
 	const char *val;
 	if ( String_Parse( args, &val ) ) {
@@ -1654,6 +2043,16 @@ commandDef_t commandList[] =
 	{"hide", &Script_Hide},                      // group/name
 	{"setcolor", &Script_SetColor},              // works on this
 	{"open", &Script_Open},                      // menu
+
+	// RtcwPro - New stuff
+	{ "fadeinmenu", &Script_FadeInMenu },          // menu
+	{ "fadeoutmenu", &Script_FadeOutMenu },        // menu
+
+	{ "closeall", &Script_CloseAll },
+	{ "closeallothermenus", &Script_CloseAllOtherMenus },
+	{ "conditionalscript", &Script_ConditionalScript },    // as conditonalopen, but then executes scripts
+	{ "copycvar", &Script_CopyCvar },
+	// -RtcwPro
 
 	{"conditionalopen", &Script_ConditionalOpen},    // DHM - Nerve:: cvar menu menu
 													 // opens first menu if cvar is true[non-zero], second if false
@@ -1758,6 +2157,29 @@ qboolean Item_EnableShowViaCvar( itemDef_t *item, int flag ) {
 }
 
 
+// RtcwPro - display if we poll on a server toggle setting
+// We want *current* settings, so this is a bit of a perf hit,
+// but this is only during UI display
+
+qboolean Item_SettingShow( itemDef_t *item, qboolean fVoteTest ) {
+	char info[MAX_INFO_STRING];
+
+	if ( fVoteTest ) {
+		trap_Cvar_VariableStringBuffer( "cg_ui_voteFlags", info, sizeof( info ) );
+		return( ( atoi( info ) & item->voteFlag ) != item->voteFlag );
+	}
+
+	//DC->getConfigString( CS_SERVERTOGGLES, info, sizeof( info ) );
+
+	if ( item->settingFlags & SVS_ENABLED_SHOW ) {
+		return( atoi( info ) & item->settingTest );
+	}
+	if ( item->settingFlags & SVS_DISABLED_SHOW ) {
+		return( !( atoi( info ) & item->settingTest ) );
+	}
+
+	return( qtrue );
+}
 // will optionaly set focus to this item
 qboolean Item_SetFocus( itemDef_t *item, float x, float y ) {
 	int i;
@@ -1782,6 +2204,13 @@ qboolean Item_SetFocus( itemDef_t *item, float x, float y ) {
 		return qfalse;
 	}
 
+	// RtcwPro
+	if ( ( item->settingFlags & ( SVS_ENABLED_SHOW | SVS_DISABLED_SHOW ) ) && !Item_SettingShow( item, qfalse ) ) {
+		return( qfalse );
+	}
+	if ( item->voteFlag != 0 && !Item_SettingShow( item, qtrue ) ) {
+		return( qfalse );
+	}
 	oldFocus = Menu_ClearFocus( item->parent );
 
 	if ( item->type == ITEM_TYPE_TEXT ) {
@@ -1975,6 +2404,13 @@ int Item_ListBox_OverLB( itemDef_t *item, float x, float y ) {
 		if ( Rect_ContainsPoint( &r, x, y ) ) {
 			return WINDOW_LB_PGDN;
 		}
+
+		// hack hack
+		r.x = item->window.rect.x;
+		r.w = item->window.rect.w;
+		if (Rect_ContainsPoint(&r, x, y)) {
+			return WINDOW_LB_SOMEWHERE;
+		}
 	} else {
 		r.x = item->window.rect.x + item->window.rect.w - SCROLLBAR_SIZE;
 		r.y = item->window.rect.y;
@@ -2001,45 +2437,56 @@ int Item_ListBox_OverLB( itemDef_t *item, float x, float y ) {
 		if ( Rect_ContainsPoint( &r, x, y ) ) {
 			return WINDOW_LB_PGDN;
 		}
+
+		// hack hack
+		r.y = item->window.rect.y;
+		r.h = item->window.rect.h;
+		if (Rect_ContainsPoint(&r, x, y)) {
+			return WINDOW_LB_SOMEWHERE;
+		}
 	}
 	return 0;
 }
 
 
-void Item_ListBox_MouseEnter( itemDef_t *item, float x, float y ) {
+void Item_ListBox_MouseEnter( itemDef_t *item, float x, float y, qboolean click) {
 	rectDef_t r;
-	listBoxDef_t *listPtr = (listBoxDef_t*)item->typeData;
+	listBoxDef_t* listPtr = (listBoxDef_t*)item->typeData;
 
-	item->window.flags &= ~( WINDOW_LB_LEFTARROW | WINDOW_LB_RIGHTARROW | WINDOW_LB_THUMB | WINDOW_LB_PGUP | WINDOW_LB_PGDN );
-	item->window.flags |= Item_ListBox_OverLB( item, x, y );
+	item->window.flags &= ~(WINDOW_LB_LEFTARROW | WINDOW_LB_RIGHTARROW | WINDOW_LB_THUMB | WINDOW_LB_PGUP | WINDOW_LB_PGDN | WINDOW_LB_SOMEWHERE);
+	item->window.flags |= Item_ListBox_OverLB(item, x, y);
 
-	if ( item->window.flags & WINDOW_HORIZONTAL ) {
-		if ( !( item->window.flags & ( WINDOW_LB_LEFTARROW | WINDOW_LB_RIGHTARROW | WINDOW_LB_THUMB | WINDOW_LB_PGUP | WINDOW_LB_PGDN ) ) ) {
-			// check for selection hit as we have exausted buttons and thumb
-			if ( listPtr->elementStyle == LISTBOX_IMAGE ) {
-				r.x = item->window.rect.x;
-				r.y = item->window.rect.y;
-				r.h = item->window.rect.h - SCROLLBAR_SIZE;
-				r.w = item->window.rect.w - listPtr->drawPadding;
-				if ( Rect_ContainsPoint( &r, x, y ) ) {
-					listPtr->cursorPos =  (int)( ( x - r.x ) / listPtr->elementWidth )  + listPtr->startPos;
-					if ( listPtr->cursorPos >= listPtr->endPos ) {
-						listPtr->cursorPos = listPtr->endPos;
+	if (click) {
+		if (item->window.flags & WINDOW_HORIZONTAL) {
+			if (!(item->window.flags & (WINDOW_LB_LEFTARROW | WINDOW_LB_RIGHTARROW | WINDOW_LB_THUMB | WINDOW_LB_PGUP | WINDOW_LB_PGDN | WINDOW_LB_SOMEWHERE))) {
+				// check for selection hit as we have exausted buttons and thumb
+				if (listPtr->elementStyle == LISTBOX_IMAGE) {
+					r.x = item->window.rect.x;
+					r.y = item->window.rect.y;
+					r.h = item->window.rect.h - SCROLLBAR_SIZE;
+					r.w = item->window.rect.w - listPtr->drawPadding;
+					if (Rect_ContainsPoint(&r, x, y)) {
+						listPtr->cursorPos = (int)((x - r.x) / listPtr->elementWidth) + listPtr->startPos;
+						if (listPtr->cursorPos >= listPtr->endPos) {
+							listPtr->cursorPos = listPtr->endPos;
+						}
 					}
 				}
-			} else {
-				// text hit..
+				else {
+					// text hit..
+				}
 			}
 		}
-	} else if ( !( item->window.flags & ( WINDOW_LB_LEFTARROW | WINDOW_LB_RIGHTARROW | WINDOW_LB_THUMB | WINDOW_LB_PGUP | WINDOW_LB_PGDN ) ) ) {
-		r.x = item->window.rect.x;
-		r.y = item->window.rect.y;
-		r.w = item->window.rect.w - SCROLLBAR_SIZE;
-		r.h = item->window.rect.h - listPtr->drawPadding;
-		if ( Rect_ContainsPoint( &r, x, y ) ) {
-			listPtr->cursorPos =  (int)( ( y - 2 - r.y ) / listPtr->elementHeight )  + listPtr->startPos;
-			if ( listPtr->cursorPos > listPtr->endPos ) {
-				listPtr->cursorPos = listPtr->endPos;
+		else if (!(item->window.flags & (WINDOW_LB_LEFTARROW | WINDOW_LB_RIGHTARROW | WINDOW_LB_THUMB | WINDOW_LB_PGUP | WINDOW_LB_PGDN | WINDOW_LB_SOMEWHERE))) {
+			r.x = item->window.rect.x;
+			r.y = item->window.rect.y;
+			r.w = item->window.rect.w - SCROLLBAR_SIZE;
+			r.h = item->window.rect.h - listPtr->drawPadding;
+			if (Rect_ContainsPoint(&r, x, y)) {
+				listPtr->cursorPos = (int)((y - 2 - r.y) / listPtr->elementHeight) + listPtr->startPos;
+				if (listPtr->cursorPos > listPtr->endPos) {
+					listPtr->cursorPos = listPtr->endPos;
+				}
 			}
 		}
 	}
@@ -2061,6 +2508,13 @@ void Item_MouseEnter( itemDef_t *item, float x, float y ) {
 			return;
 		}
 
+		// RtcwPro - server settings too .. (mostly for callvote)
+		if ( ( item->settingFlags & ( SVS_ENABLED_SHOW | SVS_DISABLED_SHOW ) ) && !Item_SettingShow( item, qfalse ) ) {
+			return;
+		}
+		if ( item->voteFlag != 0 && !Item_SettingShow( item, qtrue ) ) {
+			return;
+		}
 		if ( Rect_ContainsPoint( &r, x, y ) ) {
 			if ( !( item->window.flags & WINDOW_MOUSEOVERTEXT ) ) {
 				Item_RunScript( item, item->mouseEnterText );
@@ -2084,7 +2538,7 @@ void Item_MouseEnter( itemDef_t *item, float x, float y ) {
 			}
 
 			if ( item->type == ITEM_TYPE_LISTBOX ) {
-				Item_ListBox_MouseEnter( item, x, y );
+				Item_ListBox_MouseEnter( item, x, y, qfalse );
 			}
 		}
 	}
@@ -2252,6 +2706,7 @@ qboolean Item_ListBox_HandleKey( itemDef_t *item, int key, qboolean down, qboole
 
 		// mouse hit
 		if ( key == K_MOUSE1 || key == K_MOUSE2 ) {
+			Item_ListBox_MouseEnter(item, DC->cursorx, DC->cursory, qtrue);
 			if ( item->window.flags & WINDOW_LB_LEFTARROW ) {
 				listPtr->startPos--;
 				if ( listPtr->startPos < 0 ) {
@@ -2277,6 +2732,8 @@ qboolean Item_ListBox_HandleKey( itemDef_t *item, int key, qboolean down, qboole
 				}
 			} else if ( item->window.flags & WINDOW_LB_THUMB ) {
 				// Display_SetCaptureItem(item);
+			} else if (item->window.flags & WINDOW_LB_SOMEWHERE) {
+				// do nowt
 			} else {
 				// select an item
 				if ( DC->realTime < lastListBoxClickTime && listPtr->doubleClick ) {
@@ -2992,7 +3449,12 @@ static void Display_CloseCinematics( void ) {
 }
 
 void  Menus_Activate( menuDef_t *menu ) {
-	menu->window.flags |= ( WINDOW_HASFOCUS | WINDOW_VISIBLE );
+	int i;
+	for (i = 0; i < menuCount; i++) {
+		Menus[i].window.flags &= ~(WINDOW_HASFOCUS | WINDOW_MOUSEOVER);
+	}
+
+	menu->window.flags |= (WINDOW_HASFOCUS | WINDOW_VISIBLE);
 	if ( menu->onOpen ) {
 		itemDef_t item;
 		item.parent = menu;
@@ -3027,15 +3489,15 @@ void Menus_HandleOOBClick( menuDef_t *menu, int key, qboolean down ) {
 		// key on.. force a mouse move to activate focus and script stuff
 		if ( down && menu->window.flags & WINDOW_OOB_CLICK ) {
 			Menu_RunCloseScript( menu );
-			menu->window.flags &= ~( WINDOW_HASFOCUS | WINDOW_VISIBLE );
+			menu->window.flags &= ~( WINDOW_HASFOCUS | WINDOW_VISIBLE | WINDOW_MOUSEOVER );
 		}
 
 		for ( i = 0; i < menuCount; i++ ) {
 			if ( Menu_OverActiveItem( &Menus[i], DC->cursorx, DC->cursory ) ) {
 //				Menu_RunCloseScript(menu);			// NERVE - SMF - why do we close the calling menu instead of just removing the focus?
 //				menu->window.flags &= ~(WINDOW_HASFOCUS | WINDOW_VISIBLE);
-				menu->window.flags &= ~( WINDOW_HASFOCUS );
-				Menus_Activate( &Menus[i] );
+				menu->window.flags &= ~(WINDOW_HASFOCUS | WINDOW_MOUSEOVER);
+				Menus[i].window.flags |= (WINDOW_HASFOCUS | WINDOW_VISIBLE);
 				Menu_HandleMouseMove( &Menus[i], DC->cursorx, DC->cursory );
 				Menu_HandleKey( &Menus[i], key, down );
 			}
@@ -3188,6 +3650,7 @@ void Menu_HandleKey( menuDef_t *menu, int key, qboolean down ) {
 		Menu_SetNextCursorItem( menu );
 		break;
 
+	
 	case K_MOUSE1:
 	case K_MOUSE2:
 		if ( item ) {
@@ -3747,6 +4210,18 @@ static bind_t g_bindings[] =
 	{"+dropweapon",  -1,             -1, -1, -1},
 	// -NERVE - SMF
 
+	// RtcwPro
+	{ "+zoomView", -1, -1, -1, -1 },
+	{ "+vstr", -1, -1, -1, -1 },
+	// -OSPx
+	{"+stats",		-1,             -1, -1, -1},
+	{"+wstats",		-1,             -1, -1, -1},
+	{"+topshots",	-1,             -1, -1, -1},
+	{"ready",		-1,             -1, -1, -1},
+	{"notready",	-1,             -1, -1, -1},
+	{"unready",		-1,             -1, -1, -1},
+
+
 	{"weapon 1",     -1,             -1, -1, -1},
 	{"weapon 2",     -1,             -1, -1, -1},
 	{"weapon 3",     -1,             -1, -1, -1},
@@ -3986,10 +4461,10 @@ void Item_Slider_Paint( itemDef_t *item ) {
 		x = item->window.rect.x;
 	}
 	DC->setColor( newColor );
-	DC->drawHandlePic( x, y, SLIDER_WIDTH, SLIDER_HEIGHT, DC->Assets.sliderBar );
+	DC->drawHandlePic( x, y + 1, SLIDER_WIDTH, SLIDER_HEIGHT, DC->Assets.sliderBar );
 
 	x = Item_Slider_ThumbPosition( item );
-	DC->drawHandlePic( x - ( SLIDER_THUMB_WIDTH / 2 ), y - 2, SLIDER_THUMB_WIDTH, SLIDER_THUMB_HEIGHT, DC->Assets.sliderThumb );
+	DC->drawHandlePic( x - ( SLIDER_THUMB_WIDTH / 2 ), y, SLIDER_THUMB_WIDTH, SLIDER_THUMB_HEIGHT, DC->Assets.sliderThumb );
 }
 
 void Item_Bind_Paint( itemDef_t *item ) {
@@ -4624,6 +5099,13 @@ void Item_Paint( itemDef_t *item ) {
 			return;
 		}
 	}
+	// RtcwPro
+	if ( ( item->settingFlags & ( SVS_ENABLED_SHOW | SVS_DISABLED_SHOW ) ) && !Item_SettingShow( item, qfalse ) ) {
+		return;
+	}
+	if ( item->voteFlag != 0 && !Item_SettingShow( item, qtrue ) ) {
+		return;
+	}
 
 	if ( item->window.flags & WINDOW_TIMEDVISIBLE ) {
 	}
@@ -4788,7 +5270,7 @@ menuDef_t *Menus_ActivateByName( const char *p, qboolean modalStack ) {
 				modalMenuStack[modalMenuCount++] = focus;
 			}
 		} else {
-			Menus[i].window.flags &= ~WINDOW_HASFOCUS;
+			Menus[i].window.flags &= ~(WINDOW_HASFOCUS | WINDOW_MOUSEOVER);
 		}
 	}
 	Display_CloseCinematics();
@@ -4858,6 +5340,13 @@ void Menu_HandleMouseMove( menuDef_t *menu, float x, float y ) {
 				continue;
 			}
 
+			// RtcwPro - server settings too
+			if ( ( menu->items[i]->settingFlags & ( SVS_ENABLED_SHOW | SVS_DISABLED_SHOW ) ) && !Item_SettingShow( menu->items[i], qfalse ) ) {
+				continue;
+			}
+			if ( menu->items[i]->voteFlag != 0 && !Item_SettingShow( menu->items[i], qtrue ) ) {
+				continue;
+			}
 
 
 			if ( Rect_ContainsPoint( &menu->items[i]->window.rect, x, y ) ) {
@@ -4891,6 +5380,7 @@ void Menu_HandleMouseMove( menuDef_t *menu, float x, float y ) {
 
 void Menu_Paint( menuDef_t *menu, qboolean forcePaint ) {
 	int i;
+	itemDef_t *item = NULL;
 
 	if ( menu == NULL ) {
 		return;
@@ -4923,6 +5413,18 @@ void Menu_Paint( menuDef_t *menu, qboolean forcePaint ) {
 
 	for ( i = 0; i < menu->itemCount; i++ ) {
 		Item_Paint( menu->items[i] );
+		if ( menu->items[i]->window.flags & WINDOW_MOUSEOVER ) {
+			item = menu->items[i];
+		}
+	}
+
+	// RtcwPro draw tooltip data if we have it
+	if ( DC->getCVarValue( "ui_showtooltips" ) &&
+		 item != NULL &&
+		 item->toolTipData != NULL &&
+		 item->toolTipData->text != NULL &&
+		 *item->toolTipData->text ) {
+		Item_Paint( item->toolTipData );
 	}
 
 	if ( debugMode ) {
@@ -4961,6 +5463,28 @@ void Item_ValidateTypeData( itemDef_t *item ) {
 	} else if ( item->type == ITEM_TYPE_MENUMODEL ) {
 		item->typeData = UI_Alloc( sizeof( modelDef_t ) );
 	}
+}
+
+// RtcwPro added from ET for tool tips
+/*
+========================
+Item_ValidateTooltipData
+========================
+*/
+qboolean Item_ValidateTooltipData( itemDef_t *item ) {
+	if ( item->toolTipData != NULL ) {
+		return( qtrue );
+	}
+
+	item->toolTipData = UI_Alloc( sizeof( itemDef_t ) );
+	if ( item->toolTipData == NULL ) {
+		return( qfalse );
+	}
+
+	Item_Init( item->toolTipData );
+	Tooltip_Initialize( item->toolTipData );
+
+	return( qtrue );
 }
 
 /*
@@ -5842,7 +6366,39 @@ qboolean ItemParse_hideCvar( itemDef_t *item, int handle ) {
 	}
 	return qfalse;
 }
+// RtcwPro added from ET for tooltips , settingsenabled, disabled
+// server setting tags
+qboolean ItemParse_settingDisabled( itemDef_t *item, int handle ) {
+	qboolean fResult = PC_Int_Parse( handle, &item->settingTest );
+	if ( fResult ) {
+		item->settingFlags = SVS_DISABLED_SHOW;
+	}
+	return( fResult );
+}
 
+qboolean ItemParse_settingEnabled( itemDef_t *item, int handle ) {
+	qboolean fResult = PC_Int_Parse( handle, &item->settingTest );
+	if ( fResult ) {
+		item->settingFlags = SVS_ENABLED_SHOW;
+	}
+	return( fResult );
+}
+
+qboolean ItemParse_tooltip( itemDef_t *item, int handle ) {
+	return( Item_ValidateTooltipData( item ) && PC_String_Parse( handle, &item->toolTipData->text ) );
+}
+
+qboolean ItemParse_tooltipalignx( itemDef_t *item, int handle ) {
+	return( Item_ValidateTooltipData( item ) && PC_Float_Parse( handle, &item->toolTipData->textalignx ) );
+}
+
+qboolean ItemParse_tooltipaligny( itemDef_t *item, int handle ) {
+	return( Item_ValidateTooltipData( item ) && PC_Float_Parse( handle, &item->toolTipData->textaligny ) );
+}
+
+qboolean ItemParse_voteFlag( itemDef_t *item, int handle ) {
+	return( PC_Int_Parse( handle, &item->voteFlag ) );
+}
 
 keywordHash_t itemParseKeywords[] = {
 	{"name", ItemParse_name, NULL},
@@ -5914,6 +6470,12 @@ keywordHash_t itemParseKeywords[] = {
 	{"cinematic", ItemParse_cinematic, NULL},
 	{"doubleclick", ItemParse_doubleClick, NULL},
 	{"noToggle", ItemParse_noToggle, NULL}, // TTimo: use with ITEM_TYPE_YESNO and an action script (see sv_punkbuster)
+	{ "tooltip",         ItemParse_tooltip,          NULL },
+	{ "tooltipalignx",       ItemParse_tooltipalignx,    NULL },
+	{ "tooltipaligny",       ItemParse_tooltipaligny,    NULL },
+	{ "settingDisabled", ItemParse_settingDisabled,  NULL }, // OSP
+	{ "settingEnabled",      ItemParse_settingEnabled,   NULL }, // OSP
+	{ "voteFlag",            ItemParse_voteFlag,         NULL }, // OSP - vote check
 	{NULL, 0, NULL}
 };
 

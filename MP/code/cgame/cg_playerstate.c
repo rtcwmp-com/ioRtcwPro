@@ -241,6 +241,7 @@ A respawn happened this snapshot
 ================
 */
 void CG_Respawn( void ) {
+	cg.serverRespawning = qfalse;   // Arnout: just in case
 	// no error decay on player movement
 	cg.thisFrameTeleport = qtrue;
 
@@ -269,6 +270,9 @@ void CG_Respawn( void ) {
 	cg.zoomedBinoc = cg.zoomedScope = qfalse;
 	cg.zoomTime = 0;
 	cg.zoomval = 0;
+	// RtcwPro - Reset zoomedFOV
+	cg.zoomedFOV = qfalse;
+	cg.zoomedTime = 0;
 
 	// clear pmext
 	memset( &cg.pmext, 0, sizeof( cg.pmext ) );
@@ -487,6 +491,9 @@ void CG_CheckLocalSounds( playerState_t *ps, playerState_t *ops ) {
 	// timelimit warnings
 	if ( cgs.timelimit > 0 ) {
 		int msec;
+
+		if (cgs.gamestate != GS_PLAYING)
+			return;
 
 		msec = cg.time - cgs.levelStartTime;
 

@@ -430,6 +430,8 @@ void R_BloomScreen( void )
 		return;
 	if ( !backEnd.doneSurfaces )
 		return;
+	//if (!clientIsConnected)
+	//	return;
 	backEnd.doneBloom = qtrue;
 	if( !bloom.started ) {
 		R_Bloom_InitTextures();
