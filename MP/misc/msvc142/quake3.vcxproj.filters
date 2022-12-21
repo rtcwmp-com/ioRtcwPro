@@ -406,6 +406,7 @@
     <ClInclude Include="..\..\code\qcommon\jansson\jansson.h" />
     <ClInclude Include="..\..\code\qcommon\jansson\jansson_config.h" />
     <ClInclude Include="..\..\code\zlib\unzip.h" />
+    <ClInclude Include="..\..\code\curl-7.60.0\include\curl\curl.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\code\asm\ftola.asm" />
