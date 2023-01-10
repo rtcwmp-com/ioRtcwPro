@@ -105,6 +105,10 @@ json_t *json_false(void);
 #define json_boolean(val) ((val) ? json_true() : json_false())
 json_t *json_null(void);
 
+#define __ATOMIC_ACQUIRE 0
+#define __ATOMIC_RELEASE 1
+
+
 /* do not call JSON_INTERNAL_INCREF or JSON_INTERNAL_DECREF directly */
 #if JSON_HAVE_ATOMIC_BUILTINS
 #define JSON_INTERNAL_INCREF(json)                                                       \

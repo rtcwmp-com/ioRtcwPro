@@ -114,7 +114,7 @@ void *GetMemory( unsigned long size )
 	memoryblock_t *block;
 
 	assert(botimport.GetMemory);
-	ptr = botimport.GetMemory( size + sizeof( memoryblock_t ) );
+	ptr = GetMemory( size + sizeof( memoryblock_t ) ); //botimport.
 	block = (memoryblock_t *) ptr;
 	block->id = MEM_ID;
 	block->ptr = (char *) ptr + sizeof( memoryblock_t );

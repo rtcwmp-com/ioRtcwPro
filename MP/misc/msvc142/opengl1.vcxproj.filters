@@ -192,6 +192,7 @@
     <ClCompile Include="..\..\code\renderer\tr_subs.c" />
     <ClCompile Include="..\..\code\renderer\tr_surface.c" />
     <ClCompile Include="..\..\code\renderer\tr_world.c" />
+    <ClCompile Include="..\..\code\renderer\tr_cmesh.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\code\client\snd_local.h" />

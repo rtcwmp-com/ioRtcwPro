@@ -277,7 +277,6 @@
     <ClCompile Include="..\..\code\opus-1.2.1\src\opus_multistream_decoder.c" />
     <ClCompile Include="..\..\code\opus-1.2.1\src\opus_multistream_encoder.c" />
     <ClCompile Include="..\..\code\opus-1.2.1\src\repacketizer.c" />
-    <ClCompile Include="..\..\code\qcommon\stats_submit_curl.c" />
     <ClCompile Include="..\..\code\zlib\adler32.c">
       <Filter>zlib</Filter>
     </ClCompile>
@@ -298,6 +297,10 @@
     </ClCompile>
     <ClCompile Include="..\..\code\zlib\unzip.c" />
     <ClCompile Include="..\..\code\zlib\ioapi.c" />
+    <ClCompile Include="..\..\code\server\sv_animation.c" />
+    <ClCompile Include="..\..\code\botlib\be_aas_routetable.c">
+      <Filter>botlib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\code\cgame\cg_public.h" />
@@ -407,6 +410,9 @@
     <ClInclude Include="..\..\code\qcommon\jansson\jansson_config.h" />
     <ClInclude Include="..\..\code\zlib\unzip.h" />
     <ClInclude Include="..\..\code\curl-7.60.0\include\curl\curl.h" />
+    <ClInclude Include="..\..\code\botlib\be_aas_routetable.h">
+      <Filter>botlib</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\code\asm\ftola.asm" />

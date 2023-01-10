@@ -2,7 +2,8 @@
 #include "../qcommon/q_shared.h"
 #include "qcommon.h"
 #include "http.h"
-#include "../../libs/libcurl/include/curl/curl.h"
+//#include "../curl-7.60.0/include/curl/curl.h"
+#include <curl/curl.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdlib.h>

@@ -3850,9 +3850,9 @@ static void CL_Minimize_f(void)
 }
 
 
-#if defined (__i386__)
+//#if defined (__i386__)
 #define BIN_STRING "x86"
-#endif
+//#endif
 
 // NERVE - SMF
 void CL_startSingleplayer_f( void ) {

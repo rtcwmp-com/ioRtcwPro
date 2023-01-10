@@ -19,9 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{81CB51C4-B434-4E12-B69B-BAEE102F2852}</ProjectGuid>
+    <ProjectGuid>{CE97AA58-0C0F-41B9-B66D-C9F2B9E11C44}</ProjectGuid>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>ioRtcwPro</ProjectName>
+    <ProjectName>ioWolfPro</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug TA|Win32'" Label="Configuration">
@@ -71,28 +71,28 @@
     <OutDir>..\..\build\release_ta-msvc142-x86\</OutDir>
     <IntDir>..\..\build\release_ta-msvc142-x86\client\</IntDir>
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>ioquake3.x86</TargetName>
+    <TargetName>ioWolfPro.x86</TargetName>
     <EmbedManifest>false</EmbedManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>..\..\build\debug-msvc142-x86\$(Configuration)\$(ProjectName)\</OutDir>
     <IntDir>..\..\build\debug-msvc142-x86\$(Configuration)\$(ProjectName)\intermediate\</IntDir>
     <LinkIncremental>true</LinkIncremental>
-    <TargetName>ioRtcwPro.x86</TargetName>
+    <TargetName>ioWolfPro.x86</TargetName>
     <EmbedManifest>false</EmbedManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>..\..\build\release-msvc142-x86\</OutDir>
     <IntDir>..\..\build\release-msvc142-x86\client\</IntDir>
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>ioquake3.x86</TargetName>
+    <TargetName>ioWolfPro.x86</TargetName>
     <EmbedManifest>false</EmbedManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug TA|Win32'">
     <OutDir>..\..\build\debug_ta-msvc142-x86\</OutDir>
     <IntDir>..\..\build\debug_ta-msvc142-x86\client\</IntDir>
     <LinkIncremental>true</LinkIncremental>
-    <TargetName>ioquake3.x86</TargetName>
+    <TargetName>ioWolfPro.x86</TargetName>
     <EmbedManifest>false</EmbedManifest>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release TA|Win32'">
@@ -101,7 +101,7 @@
       <MkTypLibCompatible>true</MkTypLibCompatible>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <TargetEnvironment>Win32</TargetEnvironment>
-      <TypeLibraryName>$(IntDir)quake3.tlb</TypeLibraryName>
+      <TypeLibraryName>$(IntDir)wolfpro.tlb</TypeLibraryName>
       <HeaderFileName />
     </Midl>
     <ClCompile>
@@ -113,7 +113,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader />
-      <PrecompiledHeaderOutputFile>$(IntDir)quake3.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderOutputFile>$(IntDir)wolfpro.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
@@ -128,13 +128,13 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>user32.lib;advapi32.lib;winmm.lib;wsock32.lib;ws2_32.lib;SDL2main.lib;SDL2.lib;OpenGL32.lib;msvcrt.lib;psapi.lib;gdi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)ioquake3.x86.exe</OutputFile>
+      <OutputFile>$(OutDir)ioWolfPro.x86.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>..\..\code\libs\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
-      <ProgramDatabaseFile>$(IntDir)quake3.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>$(IntDir)wolfpro.pdb</ProgramDatabaseFile>
       <GenerateMapFile>true</GenerateMapFile>
-      <MapFileName>$(IntDir)quake3.map</MapFileName>
+      <MapFileName>$(IntDir)wolfpro.map</MapFileName>
       <SubSystem>Windows</SubSystem>
       <StackReserveSize>8388608</StackReserveSize>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
@@ -154,16 +154,16 @@
       <MkTypLibCompatible>true</MkTypLibCompatible>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <TargetEnvironment>Win32</TargetEnvironment>
-      <TypeLibraryName>$(IntDir)quake3.tlb</TypeLibraryName>
+      <TypeLibraryName>$(IntDir)wolfpro.tlb</TypeLibraryName>
       <HeaderFileName />
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\code\SDL2\include;..\..\code\curl-7.54.0\include;..\..\code\AL;..\..\code\opus-1.2.1\include;..\..\code\opus-1.2.1\celt;..\..\code\opus-1.2.1\silk;..\..\code\opus-1.2.1\silk\float;..\..\code\zlib;..\..\libs\libcurl\include;..\..\code\jpeg-8c;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_WIN32;WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;BOTLIB;USE_ICON;USE_CURL;USE_CURL_DLOPEN;USE_OPENAL;USE_OPENAL_DLOPEN;USE_VOIP;OPUS_BUILD;HAVE_LRINTF;FLOATING_POINT;FLOAT_APPROX;USE_ALLOCA;USE_INTERNAL_JPEG;USE_RENDERER_DLOPEN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\code\SDL2\include;..\..\code\AL;..\..\code\opus-1.2.1\include;..\..\code\opus-1.2.1\celt;..\..\code\opus-1.2.1\silk;..\..\code\opus-1.2.1\silk\float;..\..\code\zlib;..\..\libs\libcurl\include;..\..\code\jpeg-8c;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_WIN32;WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;BOTLIB;USE_ICON;CURL_STATICLIB;USE_CURL;USE_CURL_DLOPEN;USE_OPENAL;USE_OPENAL_DLOPEN;USE_VOIP;OPUS_BUILD;HAVE_LRINTF;FLOATING_POINT;FLOAT_APPROX;USE_ALLOCA;USE_INTERNAL_JPEG;USE_RENDERER_DLOPEN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader />
-      <PrecompiledHeaderOutputFile>$(IntDir)quake3.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderOutputFile>$(IntDir)wolfpro.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
@@ -173,7 +173,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <CompileAs>CompileAsC</CompileAs>
-      <FloatingPointModel>Fast</FloatingPointModel>
+      <FloatingPointModel>Precise</FloatingPointModel>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -184,22 +184,27 @@
       <AdditionalDependencies>user32.lib;advapi32.lib;winmm.lib;wsock32.lib;ws2_32.lib;SDL2main.lib;SDL2.lib;OpenGL32.lib;msvcrtd.lib;psapi.lib;gdi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>..\..\build\debug-msvc142-x86\$(Configuration)\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalLibraryDirectories>..\..\code\libs\win32\libcurl.lib;..\..\code\libs\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\code\qcommon\jansson_win\jansson.lib;..\..\code\libs\win32\libcurl.lib;..\..\code\libs\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>$(IntDir)quake3.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>$(IntDir)wolfpro.pdb</ProgramDatabaseFile>
       <GenerateMapFile>true</GenerateMapFile>
-      <MapFileName>$(IntDir)quake3.map</MapFileName>
+      <MapFileName>$(IntDir)wolfpro.map</MapFileName>
       <SubSystem>Windows</SubSystem>
       <StackReserveSize>8388608</StackReserveSize>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention />
       <TargetMachine>MachineX86</TargetMachine>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <PostBuildEvent>
       <Message>Post build processing..</Message>
-      <Command>rem bash -c "perl ./unix/cons -- debug"
-copy "$(SolutionDir)..\..\code\libs\win32\sdl2.dll" "$(TargetDir)"</Command>
+      <Command>copy "$(OUTPUTDIR)$(Configuration)\sdl2.dll" "$(RTCWBASE)"
+copy "$(OUTPUTDIR)$(Configuration)\$(TargetName)$(TargetExt)" "$(RTCWBASE)"</Command>
     </PostBuildEvent>
+    <ManifestResourceCompile>
+      <ResourceOutputFileName>
+      </ResourceOutputFileName>
+    </ManifestResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Midl>
@@ -207,7 +212,7 @@ copy "$(SolutionDir)..\..\code\libs\win32\sdl2.dll" "$(TargetDir)"</Command>
       <MkTypLibCompatible>true</MkTypLibCompatible>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <TargetEnvironment>Win32</TargetEnvironment>
-      <TypeLibraryName>$(IntDir)quake3.tlb</TypeLibraryName>
+      <TypeLibraryName>$(IntDir)wolfpro.tlb</TypeLibraryName>
       <HeaderFileName />
     </Midl>
     <ClCompile>
@@ -219,7 +224,7 @@ copy "$(SolutionDir)..\..\code\libs\win32\sdl2.dll" "$(TargetDir)"</Command>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader />
-      <PrecompiledHeaderOutputFile>$(IntDir)quake3.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderOutputFile>$(IntDir)wolfpro.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
@@ -234,13 +239,13 @@ copy "$(SolutionDir)..\..\code\libs\win32\sdl2.dll" "$(TargetDir)"</Command>
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>user32.lib;advapi32.lib;winmm.lib;wsock32.lib;ws2_32.lib;SDL2main.lib;SDL2.lib;OpenGL32.lib;msvcrt.lib;psapi.lib;gdi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)ioquake3.x86.exe</OutputFile>
+      <OutputFile>$(OutDir)ioWolfPro.x86.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>..\..\code\libs\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
-      <ProgramDatabaseFile>$(IntDir)quake3.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>$(IntDir)wolfpro.pdb</ProgramDatabaseFile>
       <GenerateMapFile>true</GenerateMapFile>
-      <MapFileName>$(IntDir)quake3.map</MapFileName>
+      <MapFileName>$(IntDir)wolfpro.map</MapFileName>
       <SubSystem>Windows</SubSystem>
       <StackReserveSize>8388608</StackReserveSize>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
@@ -254,7 +259,7 @@ copy "$(SolutionDir)..\..\code\libs\win32\sdl2.dll" "$(TargetDir)"</Command>
       <MkTypLibCompatible>true</MkTypLibCompatible>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <TargetEnvironment>Win32</TargetEnvironment>
-      <TypeLibraryName>$(IntDir)quake3.tlb</TypeLibraryName>
+      <TypeLibraryName>$(IntDir)wolfpro.tlb</TypeLibraryName>
       <HeaderFileName />
     </Midl>
     <ClCompile>
@@ -263,7 +268,7 @@ copy "$(SolutionDir)..\..\code\libs\win32\sdl2.dll" "$(TargetDir)"</Command>
       <PreprocessorDefinitions>_WIN32;WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;BOTLIB;USE_ICON;USE_CURL;USE_CURL_DLOPEN;USE_OPENAL;USE_OPENAL_DLOPEN;USE_VOIP;OPUS_BUILD;HAVE_LRINTF;FLOATING_POINT;FLOAT_APPROX;USE_ALLOCA;MISSIONPACK;USE_RENDERER_DLOPEN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader />
-      <PrecompiledHeaderOutputFile>$(IntDir)quake3.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderOutputFile>$(IntDir)wolfpro.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
@@ -282,13 +287,13 @@ copy "$(SolutionDir)..\..\code\libs\win32\sdl2.dll" "$(TargetDir)"</Command>
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>user32.lib;advapi32.lib;winmm.lib;wsock32.lib;ws2_32.lib;SDL2main.lib;SDL2.lib;OpenGL32.lib;msvcrtd.lib;psapi.lib;gdi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)ioquake3.x86.exe</OutputFile>
+      <OutputFile>$(OutDir)ioWolfPro.x86.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>..\..\code\libs\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>$(IntDir)quake3.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>$(IntDir)wolfpro.pdb</ProgramDatabaseFile>
       <GenerateMapFile>true</GenerateMapFile>
-      <MapFileName>$(IntDir)quake3.map</MapFileName>
+      <MapFileName>$(IntDir)wolfpro.map</MapFileName>
       <SubSystem>Windows</SubSystem>
       <StackReserveSize>8388608</StackReserveSize>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
@@ -312,6 +317,7 @@ copy "$(SolutionDir)..\..\code\libs\win32\sdl2.dll" "$(TargetDir)"</Command>
     <ClCompile Include="..\..\code\botlib\be_aas_reach.c" />
     <ClCompile Include="..\..\code\botlib\be_aas_route.c" />
     <ClCompile Include="..\..\code\botlib\be_aas_routealt.c" />
+    <ClCompile Include="..\..\code\botlib\be_aas_routetable.c" />
     <ClCompile Include="..\..\code\botlib\be_aas_sample.c" />
     <ClCompile Include="..\..\code\botlib\be_ai_char.c" />
     <ClCompile Include="..\..\code\botlib\be_ai_chat.c" />
@@ -735,7 +741,6 @@ copy "$(SolutionDir)..\..\code\libs\win32\sdl2.dll" "$(TargetDir)"</Command>
     <ClCompile Include="..\..\code\qcommon\puff.c" />
     <ClCompile Include="..\..\code\qcommon\q_math.c" />
     <ClCompile Include="..\..\code\qcommon\q_shared.c" />
-    <ClCompile Include="..\..\code\qcommon\stats_submit_curl.c" />
     <ClCompile Include="..\..\code\qcommon\vm.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug TA|Win32'">Disabled</Optimization>
       <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug TA|Win32'">true</BrowseInformation>
@@ -765,6 +770,7 @@ copy "$(SolutionDir)..\..\code\libs\win32\sdl2.dll" "$(TargetDir)"</Command>
     </ClCompile>
     <ClCompile Include="..\..\code\sdl\sdl_input.c" />
     <ClCompile Include="..\..\code\sdl\sdl_snd.c" />
+    <ClCompile Include="..\..\code\server\sv_animation.c" />
     <ClCompile Include="..\..\code\server\sv_bot.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug TA|Win32'">Disabled</Optimization>
       <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug TA|Win32'">true</BrowseInformation>
@@ -912,6 +918,7 @@ copy "$(SolutionDir)..\..\code\libs\win32\sdl2.dll" "$(TargetDir)"</Command>
     <ClInclude Include="..\..\code\botlib\be_aas_reach.h" />
     <ClInclude Include="..\..\code\botlib\be_aas_route.h" />
     <ClInclude Include="..\..\code\botlib\be_aas_routealt.h" />
+    <ClInclude Include="..\..\code\botlib\be_aas_routetable.h" />
     <ClInclude Include="..\..\code\botlib\be_aas_sample.h" />
     <ClInclude Include="..\..\code\botlib\be_ai_weight.h" />
     <ClInclude Include="..\..\code\botlib\be_interface.h" />

@@ -860,7 +860,7 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 //		Com_Printf( "%s%f\n", (const char*)VMA( 1 ), VMF( 2 ) );
 		return 0;
 
-	case CG_LOADCAMERA:
+	/*case CG_LOADCAMERA:
 		return loadCamera( args[1], VMA( 2 ) );
 
 	case CG_STARTCAMERA:
@@ -869,7 +869,7 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 
 	case CG_GETCAMERAINFO:
 		return getCameraInfo( args[1], args[2], VMA( 3 ), VMA( 4 ), VMA( 5 ) );
-
+	*/
 	case CG_GET_ENTITY_TOKEN:
 		return re.GetEntityToken( VMA( 1 ), args[2] );
 
