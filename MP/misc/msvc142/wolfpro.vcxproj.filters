@@ -407,12 +407,12 @@
     <ClInclude Include="..\..\code\qcommon\json.h" />
     <ClInclude Include="..\..\code\qcommon\jansson\hashtable.h" />
     <ClInclude Include="..\..\code\qcommon\jansson\jansson.h" />
-    <ClInclude Include="..\..\code\qcommon\jansson\jansson_config.h" />
     <ClInclude Include="..\..\code\zlib\unzip.h" />
     <ClInclude Include="..\..\code\curl-7.60.0\include\curl\curl.h" />
     <ClInclude Include="..\..\code\botlib\be_aas_routetable.h">
       <Filter>botlib</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\code\qcommon\jansson_win\jansson_config.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\code\asm\ftola.asm" />

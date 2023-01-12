@@ -947,7 +947,7 @@ copy "$(OUTPUTDIR)$(Configuration)\$(TargetName)$(TargetExt)" "$(RTCWBASE)"</Com
     <ClInclude Include="..\..\code\qcommon\cm_public.h" />
     <ClInclude Include="..\..\code\qcommon\jansson\hashtable.h" />
     <ClInclude Include="..\..\code\qcommon\jansson\jansson.h" />
-    <ClInclude Include="..\..\code\qcommon\jansson\jansson_config.h" />
+    <ClInclude Include="..\..\code\qcommon\jansson_win\jansson_config.h" />
     <ClInclude Include="..\..\code\qcommon\json.h" />
     <ClInclude Include="..\..\code\qcommon\puff.h" />
     <ClInclude Include="..\..\code\qcommon\qcommon.h" />
