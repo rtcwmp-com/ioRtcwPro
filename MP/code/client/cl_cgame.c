@@ -935,14 +935,15 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		CL_TranslateString( VMA( 1 ), VMA( 2 ) );
 		return 0;
 		// - NERVE - SMF
-	case CG_R_VALIDATE:
+	/*case CG_R_VALIDATE:
 		CL_SetRestStatus();
 		return 0;
 	case CG_R_BUILD:
 		Cvar_RestBuildList(VMA(1));
 		CL_SetRestStatus();
 		return 0;
-		// reqSS
+	*/
+	// reqSS
 	//case CG_REQUEST_SS:
 	//	CL_GenerateSS(VMA(1), VMA(2), VMA(3), VMA(4), VMA(5));
 	//	return 0;

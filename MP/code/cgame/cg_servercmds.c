@@ -2352,15 +2352,15 @@ static void CG_ServerCommand( void ) {
 		return;
 	}
 
-	if (!Q_stricmp(cmd, "revalidate")) {
-		trap_Rest_Validate();
-		return;
-	}
+	//if (!Q_stricmp(cmd, "revalidate")) {
+	//	trap_Rest_Validate();
+	//	return;
+	//}
 
-	if (!Q_stricmp(cmd, "rereload")) {
-		trap_Rest_Build(CG_Argv(1));
-		return;
-	}
+	//if (!Q_stricmp(cmd, "rereload")) {
+	//	trap_Rest_Build(CG_Argv(1));
+	//	return;
+	//}
 
 	// reqSS
 	/*if (!strcmp(cmd, "reqss"))

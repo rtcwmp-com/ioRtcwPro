@@ -532,13 +532,13 @@ void trap_TranslateString( const char *string, char *buf ) {
 	syscall( CG_TRANSLATE_STRING, string, buf );
 }
 // -NERVE - SMF
-void trap_Rest_Validate(void) {
-	syscall(CG_R_VALIDATE);
-}
-
-void trap_Rest_Build(const char *data) {
-	syscall(CG_R_BUILD, data);
-}
+//void trap_Rest_Validate(void) {
+//	syscall(CG_R_VALIDATE);
+//}
+//
+//void trap_Rest_Build(const char *data) {
+//	syscall(CG_R_BUILD, data);
+//}
 
 // reqSS
 //void trap_RequestSS(char* address, char* hookid, char* hooktoken, char* waittime, char* datetime) {
