@@ -38,7 +38,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "../qcommon/q_shared.h"
 #include "botlib.h"
 #include "l_log.h"
-#include "l_memory.h"
+//#include "l_memory.h"
 #include "be_interface.h"
 
 #ifdef _DEBUG
@@ -114,7 +114,7 @@ void *GetMemory( unsigned long size )
 	memoryblock_t *block;
 
 	assert(botimport.GetMemory);
-	ptr = GetMemory( size + sizeof( memoryblock_t ) ); //botimport.
+	ptr = botimport.GetMemory( size + sizeof( memoryblock_t ) );
 	block = (memoryblock_t *) ptr;
 	block->id = MEM_ID;
 	block->ptr = (char *) ptr + sizeof( memoryblock_t );

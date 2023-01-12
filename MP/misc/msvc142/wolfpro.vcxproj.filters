@@ -404,7 +404,6 @@
     <ClInclude Include="..\..\code\botlib\l_struct.h">
       <Filter>botlib</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\qcommon\json.h" />
     <ClInclude Include="..\..\code\qcommon\jansson\hashtable.h" />
     <ClInclude Include="..\..\code\qcommon\jansson\jansson.h" />
     <ClInclude Include="..\..\code\zlib\unzip.h" />
