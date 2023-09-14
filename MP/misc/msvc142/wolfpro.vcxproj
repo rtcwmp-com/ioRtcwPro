@@ -68,29 +68,29 @@
     <_ProjectFileVersion>12.0.30501.0</_ProjectFileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release TA|Win32'">
-    <OutDir>..\..\build\release_ta-msvc142-x86\</OutDir>
-    <IntDir>..\..\build\release_ta-msvc142-x86\client\</IntDir>
+    <OutDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\intermediate\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <TargetName>ioWolfPro.x86</TargetName>
     <EmbedManifest>false</EmbedManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>..\..\build\debug-msvc142-x86\$(Configuration)\$(ProjectName)\</OutDir>
-    <IntDir>..\..\build\debug-msvc142-x86\$(Configuration)\$(ProjectName)\intermediate\</IntDir>
+    <OutDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\intermediate\</IntDir>
     <LinkIncremental>true</LinkIncremental>
     <TargetName>ioWolfPro.x86</TargetName>
     <EmbedManifest>false</EmbedManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>..\..\build\release-msvc142-x86\</OutDir>
-    <IntDir>..\..\build\release-msvc142-x86\client\</IntDir>
+    <OutDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\intermediate\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <TargetName>ioWolfPro.x86</TargetName>
     <EmbedManifest>false</EmbedManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug TA|Win32'">
-    <OutDir>..\..\build\debug_ta-msvc142-x86\</OutDir>
-    <IntDir>..\..\build\debug_ta-msvc142-x86\client\</IntDir>
+    <OutDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\intermediate\</IntDir>
     <LinkIncremental>true</LinkIncremental>
     <TargetName>ioWolfPro.x86</TargetName>
     <EmbedManifest>false</EmbedManifest>
@@ -128,7 +128,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>user32.lib;advapi32.lib;winmm.lib;wsock32.lib;ws2_32.lib;SDL2main.lib;SDL2.lib;OpenGL32.lib;msvcrt.lib;psapi.lib;gdi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)ioWolfPro.x86.exe</OutputFile>
+      <OutputFile>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>..\..\code\libs\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -182,7 +182,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>user32.lib;advapi32.lib;winmm.lib;wsock32.lib;ws2_32.lib;SDL2main.lib;SDL2.lib;OpenGL32.lib;msvcrtd.lib;psapi.lib;gdi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\..\build\debug-msvc142-x86\$(Configuration)\$(TargetName)$(TargetExt)</OutputFile>
+      <OutputFile>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>..\..\code\qcommon\jansson_win\jansson.lib;..\..\code\libs\win32\libcurl.lib;..\..\code\libs\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -198,8 +198,8 @@
     </Link>
     <PostBuildEvent>
       <Message>Post build processing..</Message>
-      <Command>copy "$(OUTPUTDIR)$(Configuration)\sdl2.dll" "$(RTCWBASE)"
-copy "$(OUTPUTDIR)$(Configuration)\$(TargetName)$(TargetExt)" "$(RTCWBASE)"</Command>
+      <Command>copy "$(OUTPUTDIR)\$(Configuration)\sdl2.dll" "$(RTCWBASE)"
+copy "$(OUTPUTDIR)\$(Configuration)\$(TargetName)$(TargetExt)" "$(RTCWBASE)"</Command>
     </PostBuildEvent>
     <ManifestResourceCompile>
       <ResourceOutputFileName>
@@ -239,7 +239,7 @@ copy "$(OUTPUTDIR)$(Configuration)\$(TargetName)$(TargetExt)" "$(RTCWBASE)"</Com
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>user32.lib;advapi32.lib;winmm.lib;wsock32.lib;ws2_32.lib;SDL2main.lib;SDL2.lib;OpenGL32.lib;msvcrt.lib;psapi.lib;gdi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)ioWolfPro.x86.exe</OutputFile>
+      <OutputFile>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>..\..\code\libs\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -287,7 +287,7 @@ copy "$(OUTPUTDIR)$(Configuration)\$(TargetName)$(TargetExt)" "$(RTCWBASE)"</Com
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>user32.lib;advapi32.lib;winmm.lib;wsock32.lib;ws2_32.lib;SDL2main.lib;SDL2.lib;OpenGL32.lib;msvcrtd.lib;psapi.lib;gdi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)ioWolfPro.x86.exe</OutputFile>
+      <OutputFile>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>..\..\code\libs\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -611,6 +611,7 @@ copy "$(OUTPUTDIR)$(Configuration)\$(TargetName)$(TargetExt)" "$(RTCWBASE)"</Com
     <ClCompile Include="..\..\code\opus-1.2.1\src\opus_multistream_decoder.c" />
     <ClCompile Include="..\..\code\opus-1.2.1\src\opus_multistream_encoder.c" />
     <ClCompile Include="..\..\code\opus-1.2.1\src\repacketizer.c" />
+    <ClCompile Include="..\..\code\qcommon\api_query.c" />
     <ClCompile Include="..\..\code\qcommon\cmd.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug TA|Win32'">Disabled</Optimization>
       <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug TA|Win32'">true</BrowseInformation>
@@ -692,6 +693,8 @@ copy "$(OUTPUTDIR)$(Configuration)\$(TargetName)$(TargetExt)" "$(RTCWBASE)"</Com
       <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Release TA|Win32'">true</BrowseInformation>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MaxSpeed</Optimization>
     </ClCompile>
+    <ClCompile Include="..\..\code\qcommon\http.c" />
+    <ClCompile Include="..\..\code\qcommon\http_main.c" />
     <ClCompile Include="..\..\code\qcommon\huffman.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug TA|Win32'">Disabled</Optimization>
       <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug TA|Win32'">true</BrowseInformation>
@@ -854,8 +857,10 @@ copy "$(OUTPUTDIR)$(Configuration)\$(TargetName)$(TargetExt)" "$(RTCWBASE)"</Com
     </ClCompile>
     <ClCompile Include="..\..\code\sys\con_log.c" />
     <ClCompile Include="..\..\code\sys\con_passive.c" />
+    <ClCompile Include="..\..\code\sys\linux_threads.c" />
     <ClCompile Include="..\..\code\sys\sys_main.c" />
     <ClCompile Include="..\..\code\sys\sys_win32.c" />
+    <ClCompile Include="..\..\code\sys\win_threads.c" />
     <ClCompile Include="..\..\code\zlib\adler32.c" />
     <ClCompile Include="..\..\code\zlib\crc32.c" />
     <ClCompile Include="..\..\code\zlib\inffast.c" />
@@ -945,6 +950,7 @@ copy "$(OUTPUTDIR)$(Configuration)\$(TargetName)$(TargetExt)" "$(RTCWBASE)"</Com
     <ClInclude Include="..\..\code\qcommon\cm_patch.h" />
     <ClInclude Include="..\..\code\qcommon\cm_polylib.h" />
     <ClInclude Include="..\..\code\qcommon\cm_public.h" />
+    <ClInclude Include="..\..\code\qcommon\http.h" />
     <ClInclude Include="..\..\code\qcommon\jansson\hashtable.h" />
     <ClInclude Include="..\..\code\qcommon\jansson\jansson.h" />
     <ClInclude Include="..\..\code\qcommon\jansson_win\jansson_config.h" />
@@ -953,6 +959,7 @@ copy "$(OUTPUTDIR)$(Configuration)\$(TargetName)$(TargetExt)" "$(RTCWBASE)"</Com
     <ClInclude Include="..\..\code\qcommon\qfiles.h" />
     <ClInclude Include="..\..\code\qcommon\q_shared.h" />
     <ClInclude Include="..\..\code\qcommon\surfaceflags.h" />
+    <ClInclude Include="..\..\code\qcommon\threads.h" />
     <ClInclude Include="..\..\code\qcommon\vm_local.h" />
     <ClInclude Include="..\..\code\renderercommon\qgl.h" />
     <ClInclude Include="..\..\code\renderercommon\tr_types.h" />

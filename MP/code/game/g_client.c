@@ -893,8 +893,8 @@ void SetWolfSpawnWeapons( gentity_t *ent ) {
 //	client->ps.powerups[PW_INVULNERABLE] = level.time + 3000; // JPW NERVE some time to find cover
 
 	// RTCWPro - update ready status
-	//if (g_gamestate.integer == GS_WARMUP || g_gamestate.integer == GS_WAITING_FOR_PLAYERS)
-	//	client->ps.powerups[PW_READY] = (player_ready_status[client->ps.clientNum].isReady == 1) ? INT_MAX : 0;
+	if (g_gamestate.integer == GS_WARMUP || g_gamestate.integer == GS_WAITING_FOR_PLAYERS)
+		client->ps.powerups[PW_READY] = (player_ready_status[client->ps.clientNum].isReady == 1) ? INT_MAX : 0;
 
 	// Communicate it to cgame
 	client->ps.stats[STAT_PLAYER_CLASS] = pc;
@@ -1565,7 +1565,33 @@ void ClientUserinfoChanged( int clientNum ) {
 		// To solve the IP bug..
 		s = va("%s", client->sess.ip);
 	}
-	
+
+	s = Info_ValueForKey(userinfo, "cg_uinfo");
+	//sscanf(s, "%i %i %i", &client->pers.clientFlags, &client->pers.clientTimeNudge, &client->pers.clientMaxPackets);
+	//sscanf(s, "%i %i %i %s", &client->pers.clientFlags, &client->pers.clientTimeNudge, &client->pers.clientMaxPackets, client->sess.guid);
+	sscanf(s, "%i %i %i %i %i %i %s %i", &client->pers.clientFlags, &client->pers.clientTimeNudge, &client->pers.clientMaxPackets,
+		&client->pers.hitSoundType, &client->pers.hitSoundBodyStyle, &client->pers.hitSoundHeadStyle, client->sess.guid, &client->pers.antilag);
+
+	// Check for "" GUID..
+	if (!Q_stricmp(client->sess.guid, "D41D8CD98F00B204E9800998ECF8427E") ||
+		!Q_stricmp(client->sess.guid, "d41d8cd98f00b204e9800998ecf8427e")) {
+		trap_DropClient(clientNum, "(Known bug) Corrupted GUID^3! ^7Restart your game..");
+	}
+
+	//// Check for Shared GUIDs and drop client - this is messing up stats
+	if (!Q_stricmp(client->sess.guid, "8E6A51BAF1C7E338A118D9E32472954E") ||
+		!Q_stricmp(client->sess.guid, "8e6a51baf1c7e338a118d9e32472954e") ||
+		!Q_stricmp(client->sess.guid, "58E419DE5A8B2655F6D48EAB68275DB5") ||
+		!Q_stricmp(client->sess.guid, "58e419de5a8b2655f6d48eab68275db5") ||
+		!Q_stricmp(client->sess.guid, "FBE2ED832F8415EFBAAA5DF10074484A") ||
+		!Q_stricmp(client->sess.guid, "fbe2ed832f8415efbaaa5df10074484a")) {
+		trap_DropClient(clientNum, "^3Shared GUID Violation. ^7Delete your RTCWKEY in Main and restart your game.");
+	}
+
+	if (!Q_stricmp(client->sess.guid,NO_GUID)) {
+        trap_DropClient(clientNum, "Empty or invalid rtcwkey");
+	}
+
 	// check the item prediction
 	s = Info_ValueForKey( userinfo, "cg_predictItems" );
 	if ( !atoi( s ) ) {
@@ -1634,7 +1660,7 @@ void ClientUserinfoChanged( int clientNum ) {
 			}
 
             if (g_gameStatslog.integer && (g_gamestate.integer == GS_PLAYING)) {
-                //G_writeGeneralEvent (ent,ent, " ", eventNameChange);
+                G_writeGeneralEvent (ent,ent, " ", eventNameChange);
             }
 
 		}
@@ -1648,10 +1674,10 @@ void ClientUserinfoChanged( int clientNum ) {
 	}
 	client->ps.stats[STAT_MAX_HEALTH] = client->pers.maxHealth;*/
 
-	if (g_debugMode.integer)
-	{
-		AP(va("print \"ClientUserinfoChanged:%i class: %i\n\"", client->ps.clientNum, client->ps.teamNum));
-	}
+	//if (g_debugMode.integer)
+	//{
+	//	AP(va("print \"ClientUserinfoChanged:%i class: %i\n\"", client->ps.clientNum, client->ps.teamNum));
+	//}
 
 	AddMedicTeamBonus(client);
 	// RTCWPro
@@ -2483,7 +2509,7 @@ void ClientSpawn( gentity_t *ent, qboolean revived ) {
 				ClientUserinfoChanged( index );
 
                 if (g_gameStatslog.integer && (g_gamestate.integer == GS_PLAYING) ) {
-                    //G_writeGeneralEvent (ent,ent, " ", eventClassChange);
+                    G_writeGeneralEvent (ent,ent, " ", eventClassChange);
                 }
 			}
 		}
@@ -2534,7 +2560,7 @@ void ClientSpawn( gentity_t *ent, qboolean revived ) {
 		vec3_t newangle;
 
 		// RtcwPro - restore the value for the client's view before death
-		newangle[YAW] = client->ps.persistant[PERS_DEATH_YAW];
+		newangle[YAW] = client->pers.deathYaw; //ps.persistant[PERS_DEATH_YAW];
 		newangle[PITCH] = 0;
 		newangle[ROLL] = 0;
 
@@ -2677,6 +2703,13 @@ void ClientDisconnect( int clientNum ) {
 				ent->s.otherEntityNum2 = 0;
 				ent->message = NULL;
 			}
+
+			// Record the players stats if they /quit so we can reload or save them
+			if (g_gameStatslog.integer)
+			{
+				// record any player that disconnects
+				G_jstatsByPlayers(qtrue, qtrue, ent->client);
+			}
 		}
 	}
 
@@ -2698,8 +2731,8 @@ void ClientDisconnect( int clientNum ) {
 	}
 
     if (g_gameStatslog.integer && g_gamestate.integer == GS_PLAYING) {
-        //G_writeDisconnectEvent(ent);
-    }
+        G_writeDisconnectEvent(ent);
+	}
 	
 	if( g_gametype.integer == GT_TOURNAMENT &&
 		ent->client->sess.sessionTeam == TEAM_FREE &&

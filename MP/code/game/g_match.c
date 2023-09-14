@@ -81,7 +81,7 @@ void G_loadMatchGame(void)
     if (g_gameStatslog.integer && g_gamestate.integer == GS_PLAYING) {
         gentity_t *dummy = g_entities;
 
-        //G_writeGeneralEvent(dummy,dummy,"",teamFirstSpawn);
+        G_writeGeneralEvent(dummy,dummy,"",teamFirstSpawn);
     }
 }
 

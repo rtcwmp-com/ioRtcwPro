@@ -34,9 +34,11 @@ If you have questions concerning this license or the applicable additional terms
 #error "Do not use in VM build"
 #endif
 
-static intptr_t (QDECL *syscall)( intptr_t arg, ... ) = (intptr_t (QDECL *)( intptr_t, ...))-1;
+//static intptr_t (QDECL *syscall)( intptr_t arg, ... ) = (intptr_t (QDECL *)( intptr_t, ...))-1;
+static int ( QDECL * syscall )( int arg, ... ) = ( int ( QDECL * )( int, ... ) ) - 1;
 
-Q_EXPORT void dllEntry( intptr_t (QDECL *syscallptr)( intptr_t arg,... ) ) {
+//Q_EXPORT void dllEntry( intptr_t (QDECL *syscallptr)( intptr_t arg,... ) ) {
+Q_EXPORT void dllEntry( int ( QDECL *syscallptr )( int arg,... ) ) {
 	syscall = syscallptr;
 }
 
@@ -115,12 +117,17 @@ void trap_Cvar_Set( const char *var_name, const char *value ) {
 void trap_Cvar_Restrictions_Load(void) {
 	syscall(G_CVAR_REST_LOAD);
 }
+
 int trap_Cvar_VariableIntegerValue( const char *var_name ) {
 	return syscall( G_CVAR_VARIABLE_INTEGER_VALUE, var_name );
 }
 
 int trap_submit_curlPost( char* jsonfile, char* matchid ) {
 	return syscall( G_SUBMIT_STATS_CURL, jsonfile, matchid );
+}
+
+int trap_HTTP_apiQuery(char* param, char* jsonText, int clientNumber) {
+	return syscall(G_API_QUERY, param, jsonText, clientNumber);
 }
 
 void trap_Cvar_VariableStringBuffer( const char *var_name, char *buffer, int bufsize ) {

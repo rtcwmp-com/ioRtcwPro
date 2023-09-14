@@ -175,6 +175,12 @@ If you have questions concerning this license or the applicable additional terms
  **********************************************************************/
 
 #ifdef Q3_VM
+typedef int intptr_t;
+#else
+#include <stdint.h>
+#endif
+
+#ifdef Q3_VM
 
 #include "../game/bg_lib.h"
 

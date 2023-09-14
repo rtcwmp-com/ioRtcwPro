@@ -524,6 +524,10 @@ extern cvar_t  *cl_waitForFire;
 extern cvar_t  *cl_language;
 // -NERVE - SMF
 
+// L0
+extern cvar_t* cl_StreamingSelfSignedCert;
+// ~L0
+
 extern cvar_t* cl_activatelean; // RTCWPro
 //=================================================
 

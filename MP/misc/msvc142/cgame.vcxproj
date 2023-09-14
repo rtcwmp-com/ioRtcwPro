@@ -68,26 +68,26 @@
     <_ProjectFileVersion>12.0.30501.0</_ProjectFileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release TA|Win32'">
-    <OutDir>..\..\build\release_ta-msvc142-x86\missionpack\</OutDir>
-    <IntDir>..\..\build\release_ta-msvc142-x86\missionpack\cgame\</IntDir>
+    <OutDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\intermediate\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <TargetName>$(ProjectName)_mp_$(PlatformShortName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>..\..\build\debug-msvc142-x86\$(Configuration)\$(ProjectName)\</OutDir>
-    <IntDir>..\..\build\debug-msvc142-x86\$(Configuration)\$(ProjectName)\intermediate\</IntDir>
+    <OutDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\intermediate\</IntDir>
     <LinkIncremental>true</LinkIncremental>
     <TargetName>$(ProjectName)_mp_$(PlatformShortName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>..\..\build\release-msvc142-x86\baseq3\</OutDir>
-    <IntDir>..\..\build\release-msvc142-x86\baseq3\cgame\</IntDir>
+    <OutDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\intermediate\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <TargetName>$(ProjectName)_mp_$(PlatformShortName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug TA|Win32'">
-    <OutDir>..\..\build\debug_ta-msvc142-x86\missionpack\</OutDir>
-    <IntDir>..\..\build\debug_ta-msvc142-x86\missionpack\cgame\</IntDir>
+    <OutDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\intermediate\</IntDir>
     <LinkIncremental>true</LinkIncremental>
     <TargetName>$(ProjectName)_mp_$(PlatformShortName)</TargetName>
   </PropertyGroup>
@@ -122,7 +122,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
+      <OutputFile>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <ModuleDefinitionFile>.\cgame.def</ModuleDefinitionFile>
       <ProgramDatabaseFile>$(IntDir)cgamex86.pdb</ProgramDatabaseFile>
@@ -147,7 +147,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;CGAMEDLL;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader />
       <PrecompiledHeaderOutputFile>$(IntDir)cgame.pch</PrecompiledHeaderOutputFile>
@@ -166,7 +166,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\..\build\debug-msvc142-x86\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
+      <OutputFile>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <ModuleDefinitionFile>.\cgame.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -180,6 +180,12 @@
       <ImportLibrary>$(IntDir)cgamex86.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
+    <PostBuildEvent>
+      <Command>..\..\libs\zip.exe -uj "$(RTCWBASE)\$(RTCW_MOD_NAME)\rtcwpro_bin.pk3" "$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)"
+xcopy "$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)"  "$(RTCWBASE)\$(RTCW_MOD_NAME)\" /Y
+xcopy "$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)"  "C:\Users\Michael\OneDrive\Documents\RTCW\$(RTCW_MOD_NAME)\" /Y
+xcopy "$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)"  "C:\Users\Michael\OneDrive\Documents\RTCW\main\" /Y</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Midl>
@@ -212,7 +218,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
+      <OutputFile>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <ModuleDefinitionFile>.\cgame.def</ModuleDefinitionFile>
       <ProgramDatabaseFile>$(IntDir)cgamex86.pdb</ProgramDatabaseFile>
@@ -256,7 +262,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
+      <OutputFile>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <ModuleDefinitionFile>.\cgame.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>

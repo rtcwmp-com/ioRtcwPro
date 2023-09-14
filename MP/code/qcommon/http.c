@@ -93,18 +93,15 @@ void HTTP_ClientGetMOTD(void) {
 
 static size_t read_callback(char* ptr, size_t size, size_t nmemb, void* stream)
 {
-
-	//curl_off_t nread;
+	curl_off_t nread;
 
 	size_t retcode = fread(ptr, size, nmemb, stream);
-/*
+
 	nread = (curl_off_t)retcode;
 
 	fprintf(stderr, "*** We read %" CURL_FORMAT_CURL_OFF_T
 		" bytes from file\n", nread);
-*/
 	return retcode;
-
 }
 /*
 ===============
@@ -112,7 +109,7 @@ reqSS
 ===============
 */
 void* CL_HTTP_SSUpload(void* args) {
-/*	SS_info_t* SS_info = (SS_info_t*)args;
+	SS_info_t* SS_info = (SS_info_t*)args;
 	CURL* curl;
 	CURLcode res;
 	struct stat file_info;
@@ -185,7 +182,7 @@ void* CL_HTTP_SSUpload(void* args) {
 
 	fclose(fd);
 	remove(SS_info->filename);
-*/
+
 	return;
 }
 

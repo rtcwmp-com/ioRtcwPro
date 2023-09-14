@@ -200,88 +200,88 @@
     <ClCompile Include="..\..\code\rend2\tr_surface.c" />
     <ClCompile Include="..\..\code\rend2\tr_vbo.c" />
     <ClCompile Include="..\..\code\rend2\tr_world.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\bokeh_fp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\bokeh_fp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\bokeh_vp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\bokeh_vp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\calclevels4x_fp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\calclevels4x_fp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\calclevels4x_vp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\calclevels4x_vp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\depthblur_fp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\depthblur_fp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\depthblur_vp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\depthblur_vp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\dlight_fp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\dlight_fp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\dlight_vp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\dlight_vp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\down4x_fp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\down4x_fp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\down4x_vp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\down4x_vp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\fogpass_fp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\fogpass_fp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\fogpass_vp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\fogpass_vp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\generic_fp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\generic_fp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\generic_vp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\generic_vp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\lightall_fp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\lightall_fp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\lightall_vp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\lightall_vp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\pshadow_fp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\pshadow_fp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\pshadow_vp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\pshadow_vp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\shadowfill_fp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\shadowfill_fp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\shadowfill_vp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\shadowfill_vp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\shadowmask_fp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\shadowmask_fp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\shadowmask_vp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\shadowmask_vp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\ssao_fp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\ssao_fp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\ssao_vp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\ssao_vp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\texturecolor_fp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\texturecolor_fp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\texturecolor_vp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\texturecolor_vp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\tonemap_fp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\tonemap_fp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\dynamic\rend2\tonemap_vp.c">
+    <ClCompile Include="..\..\Builds\dynamic\rend2\tonemap_vp.c">
       <Filter>dynamic</Filter>
     </ClCompile>
   </ItemGroup>

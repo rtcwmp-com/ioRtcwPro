@@ -680,7 +680,7 @@ void Svcmd_ResetMatch_f(qboolean fDoReset, qboolean fDoRestart) {
 	level.alliedVenom = level.axisVenom = 0;
 
     if (g_gamestate.integer == GS_PLAYING && g_gameStatslog.integer) {
-        //G_writeGameEarlyExit();  // properly close current stats output
+        G_writeGameEarlyExit();  // properly close current stats output
         // fix stats for when map restarts occur
         if (!fDoReset && fDoRestart  && g_gametype.integer == GT_WOLF_STOPWATCH) {
             if (g_currentRound.integer == 1) {
@@ -752,7 +752,7 @@ void Svcmd_SwapTeams_f( void ) {
 	}
 
     if (g_gamestate.integer == GS_PLAYING && g_gameStatslog.integer) {
-        //G_writeGameEarlyExit();  // properly close current stats output
+        G_writeGameEarlyExit();  // properly close current stats output
     }
 	trap_Cvar_Set( "g_swapteams", "1" );
 

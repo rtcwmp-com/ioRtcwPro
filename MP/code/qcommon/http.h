@@ -113,11 +113,29 @@ typedef struct {
 	void (*callback)(char* fmt, ...);
 } http_stats_t;
 
+
+/*
+============
+HTTP_APIInquiry_t
+
+Structure for issuing inquiries and invoking callbacks.
+============
+*/
+typedef struct {
+	char* url;
+	char* param;
+	char* jsonText;
+	int clientNumber;
+
+	void (*callback)(char* fmt, ...);
+} HTTP_APIInquiry_t;
+
 //
 // http_main.c
 //
 void* HTTP_Post(void* args);
 void* HTTP_Get(void* args);
+size_t HTTP_ParseReply(void* ptr, size_t size, size_t nmemb, struct HTTP_Reply_t* s);
 char* getCurrentPath(char* file);
 
 //

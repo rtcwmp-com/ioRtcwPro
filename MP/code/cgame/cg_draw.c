@@ -584,7 +584,7 @@ void CG_DrawTeamBackground( int x, int y, int w, int h, float alpha, int team ) 
 ===========================================================================================
 */
 
-#define UPPERRIGHT_X 500
+#define UPPERRIGHT_X 640  // RtcwPro move this all the way to the right
 
 /*
 ==================
@@ -710,9 +710,11 @@ static float CG_DrawTeamOverlay( float y ) {
 	int pwidth, lwidth;
 	int plyrs;
 	char st[16];
+	char lt[2]; // string for latch classtype
 	clientInfo_t *ci;
 	// NERVE - SMF
 	char classType[2] = { 0, 0 };
+	char latchType[2] = { 0, 0 };
 	int val;
 	vec4_t deathcolor, damagecolor;      // JPW NERVE
 	float       *pcolor;
@@ -741,7 +743,7 @@ static float CG_DrawTeamOverlay( float y ) {
 
 	// max player name width
 	pwidth = 0;
-	for ( i = 0; i < numSortedTeamPlayers; i++ ) {
+	for ( i = 0; i < numSortedTeamPlayers && i <= TEAM_MAXOVERLAY; i++ ) {
 		ci = cgs.clientinfo + sortedTeamPlayers[i];
 		if ( ci->infoValid && ci->team == cg.snap->ps.persistant[PERS_TEAM] ) {
 			plyrs++;
@@ -765,7 +767,7 @@ static float CG_DrawTeamOverlay( float y ) {
 	// max location name width
 	lwidth = 0;
 	if ( cg_drawTeamOverlay.integer > 1 ) {
-		for ( i = 0; i < numSortedTeamPlayers; i++ ) {
+		for ( i = 0; i < numSortedTeamPlayers && i <= TEAM_MAXOVERLAY; i++ ) {
 			ci = cgs.clientinfo + sortedTeamPlayers[i];
 			if ( ci->infoValid &&
 				 ci->team == cg.snap->ps.persistant[PERS_TEAM] &&
@@ -796,9 +798,9 @@ static float CG_DrawTeamOverlay( float y ) {
 	}
 
 	if ( cg_drawTeamOverlay.integer > 1 ) {
-		w = ( pwidth + lwidth + 3 + 7 ) * TINYCHAR_WIDTH; // JPW NERVE was +4+7
+		w = ( pwidth + lwidth + 3 + 9 ) * TINYCHAR_WIDTH; // JPW NERVE was +4+7
 	} else {
-		w = ( pwidth + lwidth + 8 ) * TINYCHAR_WIDTH; // JPW NERVE was +4+7
+		w = ( pwidth + lwidth + 10 ) * TINYCHAR_WIDTH; // JPW NERVE was +4+7
 
 	}
 	
@@ -836,7 +838,7 @@ static float CG_DrawTeamOverlay( float y ) {
 	CG_DrawRect( x - 1, y, w + 2, h + 2, 1, hcolor );
 
 
-	for ( i = 0; i < numSortedTeamPlayers; i++ ) {
+	for ( i = 0; i < numSortedTeamPlayers && i <= TEAM_MAXOVERLAY; i++ ) {
 		ci = cgs.clientinfo + sortedTeamPlayers[i];
 		if ( ci->infoValid && ci->team == cg.snap->ps.persistant[PERS_TEAM] ) {
 			// RtcwPro - Add * in front or revivable players..
@@ -859,6 +861,30 @@ static float CG_DrawTeamOverlay( float y ) {
 
 			Com_sprintf( st, sizeof( st ), "%s", CG_TranslateString( classType ) );
 
+			// deteremine latched class type
+			val = ci->latchedClass;
+
+			qboolean playerIsSpawning = (ci->powerups & (1 << PW_INVULNERABLE) && ci->health >= 100);
+
+			if (playerIsSpawning)
+			{
+				latchType[0] = '\0';
+			}
+			else if (val == 0) {
+				latchType[0] = 'S';
+			}
+			else if (val == 1) {
+				latchType[0] = 'M';
+			}
+			else if (val == 2) {
+				latchType[0] = 'E';
+			}
+			else if (val == 3) {
+				latchType[0] = 'L';
+			}
+
+			Com_sprintf(lt, sizeof(lt), "%s", CG_TranslateString(latchType));
+
 			// JPW NERVE
 			if ( ci->health > 80 ) {
 				pcolor = hcolor;
@@ -878,17 +904,26 @@ static float CG_DrawTeamOverlay( float y ) {
 			// RTCWPro - display obj carriers
 			if (ci->powerups & ((1 << PW_REDFLAG) | (1 << PW_BLUEFLAG)))
 			{
-				CG_DrawPic(xx - 3, y - 3, 15, 15, trap_R_RegisterShader("models/multiplayer/treasure/treasure"));
+				CG_DrawPic(xx - 3, y - 3, 15, 15, cgs.media.treasureIcon); // trap_R_RegisterShaderNoMip("models/multiplayer/treasure/treasure"));
 			}
 
 			hcolor[0] = hcolor[1] = 1.0;
 			hcolor[2] = 0.0;
 			hcolor[3] = cg_hudAlpha.value;
 			// RtcwPro put IsRevivable in front of class type
-			CG_DrawStringExt( xx, y, va("%s%s", isRevivable, st), damagecolor, qtrue, qfalse, TINYCHAR_WIDTH, TINYCHAR_HEIGHT, 5 ); // always draw class name and * yellow
+
+			if (!Q_stricmp(st, lt) || cg_teamOverlayLatchedClass.integer == 0 || playerIsSpawning)
+				CG_DrawStringExt(xx, y, va("%s%s", isRevivable, st), damagecolor, qtrue, qfalse, TINYCHAR_WIDTH, TINYCHAR_HEIGHT, 5); // always draw class name and * yellow
+			else
+			{
+				CG_DrawPic(xx + 16, y - 1, 9, 9, trap_R_RegisterShaderNoMip("gfx/2d/arrow.tga"));
+				CG_DrawStringExt(xx, y, va("%s%s%s%s", isRevivable, st, " ", lt), damagecolor, qtrue, qfalse, TINYCHAR_WIDTH, TINYCHAR_HEIGHT, 5); // always draw class name and * yellow
+			}
+
 			hcolor[0] = hcolor[1] = hcolor[2] = 1.0;
 			hcolor[3] = cg_hudAlpha.value;
-			xx = x + 3 * TINYCHAR_WIDTH;
+			
+			xx = x + 5 * TINYCHAR_WIDTH;
 			CG_DrawStringExt( xx + 1, y, ci->name, pcolor, qtrue, qfalse, // RtcwPro moved IsRevivable above
 							  TINYCHAR_WIDTH, TINYCHAR_HEIGHT, TEAM_OVERLAY_MAXNAME_WIDTH );
 
@@ -903,7 +938,7 @@ static float CG_DrawTeamOverlay( float y ) {
 //					len = lwidth;
 //				}
 
-				xx = x + TINYCHAR_WIDTH * 5 + TINYCHAR_WIDTH * pwidth +
+				xx = x + 20 + TINYCHAR_WIDTH * 5 + TINYCHAR_WIDTH * pwidth +
 					 ( ( lwidth / 2 - len / 2 ) * TINYCHAR_WIDTH );
 				CG_DrawStringExt( xx, y,
 								  p, hcolor, qfalse, qfalse, TINYCHAR_WIDTH, TINYCHAR_HEIGHT,
@@ -914,9 +949,9 @@ static float CG_DrawTeamOverlay( float y ) {
 			Com_sprintf( st, sizeof( st ), "%3i", ci->health ); // JPW NERVE pulled class stuff since it's at top now
 
 			if ( cg_drawTeamOverlay.integer > 1 ) {
-				xx = x + TINYCHAR_WIDTH * 6 + TINYCHAR_WIDTH * pwidth + TINYCHAR_WIDTH * lwidth;
+				xx = x + 20 + TINYCHAR_WIDTH * 6 + TINYCHAR_WIDTH * pwidth + TINYCHAR_WIDTH * lwidth;
 			} else {
-				xx = x + TINYCHAR_WIDTH * 4 + TINYCHAR_WIDTH * pwidth + TINYCHAR_WIDTH * lwidth;
+				xx = x + 20 + TINYCHAR_WIDTH * 4 + TINYCHAR_WIDTH * pwidth + TINYCHAR_WIDTH * lwidth;
 			}
 
 			CG_DrawStringExt( xx, y,
@@ -3727,8 +3762,8 @@ static void CG_DrawWarmup( void ) {
 
 		if ( !cg.demoPlayback && cg.snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR &&
 			( !( cg.snap->ps.pm_flags & PMF_FOLLOW ) || ( cg.snap->ps.pm_flags & PMF_LIMBO ) ) ) {
-			//s1 = (player_ready_status[cg.clientNum].isReady) ? "^3You are ready" : CG_TranslateString("Type ^3\\ready ^7in the console to start");
-			//w = CG_DrawStrlen( s1 );
+			s1 = (player_ready_status[cg.clientNum].isReady) ? "^3You are ready" : CG_TranslateString("Type ^3\\ready ^7in the console to start");
+			w = CG_DrawStrlen( s1 );
 			CG_DrawStringExt( 320 - w * cw / 2, 140, s1, colorWhite,
 								qfalse, qtrue, cw, (int)( cw * 1.5 ), 0 );
 		}

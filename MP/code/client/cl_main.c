@@ -30,6 +30,7 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "client.h"
 #include <limits.h>
+#include "../qcommon/http.h"
 
 #ifdef __linux__
 #include <sys/stat.h>
@@ -151,6 +152,7 @@ cvar_t  *cl_updatefiles;
 
 cvar_t	*cl_lanForcePackets;
 
+cvar_t *cl_StreamingSelfSignedCert;
 cvar_t	*cl_guid;
 cvar_t	*cl_guidServerUniq;
 

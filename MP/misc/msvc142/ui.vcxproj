@@ -67,28 +67,28 @@
     <_ProjectFileVersion>12.0.30501.0</_ProjectFileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release TA|Win32'">
-    <OutDir>..\..\build\release_ta-msvc142-x86\missionpack\</OutDir>
-    <IntDir>..\..\build\release_ta-msvc142-x86\missionpack\ui\</IntDir>
+    <OutDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\</OutDir>
+    <IntDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\intermediate\</IntDir>
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>uix86</TargetName>
+    <TargetName>ui_mp_x86</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>..\..\build\debug-msvc142-x86\$(Configuration)\$(ProjectName)\</OutDir>
-    <IntDir>..\..\build\debug-msvc142-x86\$(Configuration)\$(ProjectName)\intermediate\</IntDir>
+    <OutDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\</OutDir>
+    <IntDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\intermediate\</IntDir>
     <LinkIncremental>true</LinkIncremental>
     <TargetName>ui_mp_x86</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>..\..\build\release-msvc142-x86\baseq3\</OutDir>
-    <IntDir>..\..\build\release-msvc142-x86\baseq3\ui\</IntDir>
+    <OutDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\</OutDir>
+    <IntDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\intermediate\</IntDir>
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>uix86</TargetName>
+    <TargetName>ui_mp_x86</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug TA|Win32'">
-    <OutDir>..\..\build\debug_ta-msvc142-x86\missionpack\</OutDir>
-    <IntDir>..\..\build\debug_ta-msvc142-x86\missionpack\ui\</IntDir>
+    <OutDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\</OutDir>
+    <IntDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\intermediate\</IntDir>
     <LinkIncremental>true</LinkIncremental>
-    <TargetName>uix86</TargetName>
+    <TargetName>ui_mp_x86</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release TA|Win32'">
     <Midl>
@@ -121,7 +121,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)uix86.dll</OutputFile>
+      <OutputFile>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <ModuleDefinitionFile>.\ui.def</ModuleDefinitionFile>
       <ProgramDatabaseFile>$(IntDir)uix86.pdb</ProgramDatabaseFile>
@@ -165,7 +165,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\..\build\debug-msvc142-x86\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
+      <OutputFile>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>$(IntDir)ui.pdb</ProgramDatabaseFile>
@@ -177,6 +177,12 @@
       <ImportLibrary>$(IntDir)uix86_new.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
+    <PostBuildEvent>
+      <Command>..\..\libs\zip.exe -uj "$(RTCWBASE)\$(RTCW_MOD_NAME)\rtcwpro_bin.pk3" "$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)"
+xcopy "$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)"  "$(RTCWBASE)\$(RTCW_MOD_NAME)\" /Y
+xcopy "$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)"  "C:\Users\Michael\OneDrive\Documents\RTCW\$(RTCW_MOD_NAME)\" /Y
+xcopy "$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)"  "C:\Users\Michael\OneDrive\Documents\RTCW\main\" /Y</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Midl>
@@ -209,7 +215,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)uix86_new.dll</OutputFile>
+      <OutputFile>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <ProgramDatabaseFile>$(IntDir)uix86_new.pdb</ProgramDatabaseFile>
       <GenerateMapFile>true</GenerateMapFile>
@@ -252,7 +258,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)uix86.dll</OutputFile>
+      <OutputFile>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <ModuleDefinitionFile>.\ui.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -421,12 +427,12 @@
     <CustomBuild Include="..\..\code\ui\ui_shared.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </CustomBuild>
-    <CustomBuild Include="..\..\ui\menudef.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <None Include="ui.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\MAIN\ui_mp\menudef.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

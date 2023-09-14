@@ -1249,7 +1249,7 @@ static void PM_CrashLand( void ) {
 
 	// start footstep cycle over
 	pm->ps->bobCycle = 0;
-	pm->ps->bobTimer = 0; // RTCWPro
+	pm->ps->quickGrenTime = 0; // RTCWPro hijack for bobtimer
 }
 
 
@@ -1780,8 +1780,8 @@ static void PM_Footsteps( void ) {
 	//pm->ps->bobCycle = (int)( old + bobmove * pml.msec ) & 255;
 	if (is_dedicated_server) 
 	{
-		pm->ps->bobTimer += pml.msec;
-		bobScale = (float)pm->ps->bobTimer / (float)maxBobTime;
+		pm->ps->quickGrenTime += pml.msec;
+		bobScale = (float)pm->ps->quickGrenTime / (float)maxBobTime;
 
 		// check for footstep / splash sounds
 		old = pm->ps->bobCycle;
@@ -2288,28 +2288,61 @@ PM_CoolWeapons
 void PM_CoolWeapons( void ) {
 	int wp;
 
-	for ( wp = 0; wp < WP_NUM_WEAPONS; wp++ ) {
+	for ( wp = 0; wp < WP_NUM_WEAPONS; wp++ )
+	{
 
 		// if you have the weapon
-		if ( COM_BitCheck( pm->ps->weapons, wp ) ) {
+		if ( COM_BitCheck( pm->ps->weapons, wp ) )
+		{
 			// and it's hot
-			if ( pm->ps->weapHeat[wp] ) {
+
+			if (pm->pmext->weapHeat[wp])
+			{
+				pm->pmext->weapHeat[wp] -= ((float)ammoTable[wp].coolRate * pml.frametime);
+
+				if (pm->pmext->weapHeat[wp] < 0) {
+					pm->pmext->weapHeat[wp] = 0;
+				}
+
+				if (ammoTable[pm->ps->weapon].maxHeat > 0)
+				{
+					pm->ps->curWeapHeat = (int)(floor((pm->pmext->weapHeat[pm->ps->weapon] / (double)ammoTable[pm->ps->weapon].maxHeat) * 255));
+				}
+				else
+				{
+					pm->ps->curWeapHeat = 0;
+				}
+
+				// sanity check weapon heat
+				if (pm->ps->curWeapHeat > 255)
+				{
+					pm->ps->curWeapHeat = 255;
+				}
+				else if (pm->ps->curWeapHeat < 0)
+				{
+					pm->ps->curWeapHeat = 0;
+				}
+			}
+
+			/*
+			* original code
+			if ( pm->ps->weapHeat[wp] )
+			{
 				pm->ps->weapHeat[wp] -= ( (float)ammoTable[wp].coolRate * pml.frametime );
 
-				if ( pm->ps->weapHeat[wp] < 0 ) {
+				if ( pm->ps->weapHeat[wp] < 0 )
+				{
 					pm->ps->weapHeat[wp] = 0;
 				}
 
 			}
+				// a weapon is currently selected, convert current heat value to 0-255 range for client transmission
+				if ( pm->ps->weapon )
+				{
+					pm->ps->curWeapHeat = (((float)pm->ps->weapHeat[pm->ps->weapon] / (float)ammoTable[pm->ps->weapon].maxHeat)) * 255.0f;
+				}
+			*/
 		}
-	}
-
-	// a weapon is currently selected, convert current heat value to 0-255 range for client transmission
-	if ( pm->ps->weapon ) {
-		pm->ps->curWeapHeat = ( ( (float)pm->ps->weapHeat[pm->ps->weapon] / (float)ammoTable[pm->ps->weapon].maxHeat ) ) * 255.0f;
-
-//		if(pm->ps->weapHeat[pm->ps->weapon])
-//			Com_Printf("pm heat: %d, %d\n", pm->ps->weapHeat[pm->ps->weapon], pm->ps->curWeapHeat);
 	}
 
 }
@@ -3007,7 +3040,8 @@ static void PM_Weapon( void ) {
 
 	// add weapon heat
 	if ( ammoTable[pm->ps->weapon].maxHeat ) {
-		pm->ps->weapHeat[pm->ps->weapon] += ammoTable[pm->ps->weapon].nextShotTime;
+		pm->pmext->weapHeat[pm->ps->weapon] += (float)ammoTable[pm->ps->weapon].nextShotTime;
+		//pm->ps->weapHeat[pm->ps->weapon] += ammoTable[pm->ps->weapon].nextShotTime;
 	}
 
 	// first person weapon animations
@@ -3220,7 +3254,16 @@ static void PM_Weapon( void ) {
 	// check for overheat
 
 	// the weapon can overheat, and it's hot
-	if ( ammoTable[pm->ps->weapon].maxHeat && pm->ps->weapHeat[pm->ps->weapon] ) {
+	if (ammoTable[pm->ps->weapon].maxHeat && pm->pmext->weapHeat[pm->ps->weapon]) {
+		// it is overheating
+		if (pm->pmext->weapHeat[pm->ps->weapon] >= ammoTable[pm->ps->weapon].maxHeat) {
+			pm->pmext->weapHeat[pm->ps->weapon] = ammoTable[pm->ps->weapon].maxHeat;   // cap heat to max
+			PM_AddEvent( EV_WEAP_OVERHEAT );
+//			PM_StartWeaponAnim(WEAP_IDLE1);	// removed.  client handles anim in overheat event
+			addTime = 2000;     // force "heat recovery minimum" to 2 sec right now
+		}
+	}
+/*	if ( ammoTable[pm->ps->weapon].maxHeat && pm->ps->weapHeat[pm->ps->weapon] ) {
 		// it is overheating
 		if ( pm->ps->weapHeat[pm->ps->weapon] >= ammoTable[pm->ps->weapon].maxHeat ) {
 			pm->ps->weapHeat[pm->ps->weapon] = ammoTable[pm->ps->weapon].maxHeat;   // cap heat to max
@@ -3229,6 +3272,7 @@ static void PM_Weapon( void ) {
 			addTime = 2000;     // force "heat recovery minimum" to 2 sec right now
 		}
 	}
+*/
 
 	if ( pm->ps->powerups[PW_HASTE] ) {
 		addTime /= 1.3;

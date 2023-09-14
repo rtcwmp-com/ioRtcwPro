@@ -54,7 +54,8 @@ This is the only way control passes into the module.
 This must be the very first function compiled into the .q3vm file
 ================
 */
-Q_EXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9, intptr_t arg10, intptr_t arg11  ) {
+//Q_EXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9, intptr_t arg10, intptr_t arg11  ) {
+Q_EXPORT int vmMain( int command, int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11  ) {
 	switch ( command ) {
 	case CG_INIT:
 		CG_Init( arg0, arg1, arg2 );
@@ -397,6 +398,7 @@ vmCvar_t cg_chatX;
 vmCvar_t cg_chatY;
 vmCvar_t cg_teamOverlayX;
 vmCvar_t cg_teamOverlayY;
+vmCvar_t cg_teamOverlayLatchedClass;
 vmCvar_t cg_compassX;
 vmCvar_t cg_compassY;
 vmCvar_t cg_zoomedSensLock;
@@ -406,6 +408,7 @@ vmCvar_t cg_drawFrags;
 vmCvar_t cg_fragsY;
 vmCvar_t cg_fragsWidth;
 vmCvar_t cg_fixedphysicsfps;
+vmCvar_t cg_debugDamage;
 
 typedef struct {
 	vmCvar_t    *vmCvar;
@@ -703,6 +706,7 @@ cvarTable_t cvarTable[] = {
 	// team overlay
 	{ &cg_teamOverlayX, "cg_teamOverlayX", "640", CVAR_ARCHIVE },
 	{ &cg_teamOverlayY, "cg_teamOverlayY", "0", CVAR_ARCHIVE },
+	{ &cg_teamOverlayLatchedClass, "cg_teamOverlayLatchedClass", "1", CVAR_ARCHIVE },
 
 	// compass
 	{ &cg_compassX, "cg_compassX", "290", CVAR_ARCHIVE },
@@ -722,6 +726,9 @@ cvarTable_t cvarTable[] = {
 	{ &cg_fragsWidth, "cg_fragsWidth", "16", CVAR_ARCHIVE },
 
 	{ &cg_fixedphysicsfps, "g_fixedphysicsfps", "0", CVAR_ROM },
+
+	// RtcwPro print damage feedback to rtcwconsole.log
+	{ &cg_debugDamage, "cg_debugDamage", "0", CVAR_ARCHIVE },
 
 	// RTCWPro - complete OSP demo features
 	{ &demo_infoWindow, "demo_infoWindow", "0", CVAR_ARCHIVE },

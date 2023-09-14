@@ -290,6 +290,8 @@ typedef struct {
 	float varc, harc;
 	vec3_t centerangles;
 
+	float weapHeat[MAX_WEAPONS];          // stores values for playerstate weapHeat
+
 } pmoveExt_t;   // data used both in client and server - store it here
 // generally useful for data you want to manipulate in bg_* and cgame, or bg_* and game
 // instead of playerstate to prevent different engine versions of playerstate between XP and MP
@@ -392,8 +394,7 @@ typedef enum {
 	// Rafael - mg42		// (SA) I don't understand these here.  can someone explain?
 	PERS_HWEAPON_USE,
 	// Rafael wolfkick
-	PERS_WOLFKICK,
-	PERS_DEATH_YAW			// RtcwPro store yaw for value on death
+	PERS_WOLFKICK
 } persEnum_t;
 
 
@@ -452,14 +453,13 @@ typedef enum {
 
 	// (SA) for Wolf
 	PW_INVULNERABLE,
-	PW_FIRE,            //----(SA)
 	PW_ELECTRIC,        //----(SA)
 	PW_BREATHER,        //----(SA)
 	PW_NOFATIGUE,       //----(SA)
 
 	PW_REDFLAG,
 	PW_BLUEFLAG,
-	PW_BALL,
+	PW_CAPPEDOBJ,		// PlayerCappedDocuments
 	PW_READY,			// Ready
 	PW_BLACKOUT,		// Specklock
 
@@ -647,7 +647,7 @@ typedef struct ammotable_s {
 	int nextShotTime;       //
 //----(SA)	added
 	int maxHeat;            // max active firing time before weapon 'overheats' (at which point the weapon will fail)
-	float coolRate;           // how fast the weapon cools down. (per second)
+	int coolRate;           // how fast the weapon cools down. (per second)
 //----(SA)	end
 	int mod;                // means of death
 } ammotable_t;
@@ -1154,7 +1154,7 @@ typedef struct {
 	int isReady;
 } player_ready_status_t;
 
-extern player_ready_status_t player_ready_status[MAX_CLIENTS];
+player_ready_status_t player_ready_status[MAX_CLIENTS];
 
 // How many players on the overlay
 #define TEAM_MAXOVERLAY     10 // RtcwPro changed this to 10
@@ -1773,11 +1773,21 @@ int BG_AnimationIndexForString( char *string, int client );
 animation_t *BG_AnimationForString( char *string, animModelInfo_t *modelInfo );
 animation_t *BG_GetAnimationForIndex( int client, int index );
 int BG_GetAnimScriptEvent( playerState_t *ps, scriptAnimEventTypes_t event );
+char* Q_StrReplace(char* haystack, char* needle, char* newp);
 void QDECL BG_AnimParseError( const char *msg, ... ) __attribute__ ((format (printf, 1, 2)));
 
 extern animStringItem_t animStateStr[];
 extern animStringItem_t animBodyPartsStr[];
-// RtcwPro
+// RtcwPro logging
+void LogEntry(char* filename, char* info);
+
+// Shared Date Functions
+char* getDateTime(void);
+char* Delim_GetDateTime(void);
+char* getDate(void);
+const char* getMonthString(int monthIndex);
+int getYearFromCYear(int cYear);
+int getDaysInMonth(int monthIndex);
 
 // Crosshairs
 void BG_setCrosshair(char *colString, float *col, float alpha, char *cvarName);

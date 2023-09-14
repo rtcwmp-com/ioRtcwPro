@@ -896,7 +896,7 @@ void G_ExplodeMissile( gentity_t *ent ) {
 
 								if (g_gamestate.integer == GS_PLAYING)
 								{
-									//G_writeObjectiveEvent(ent->parent, objDestroyed); // ent->parent = attacker
+						G_writeObjectiveEvent(ent->parent, objDestroyed); // ent->parent = attacker
 									ent->parent->client->sess.obj_destroyed++;
 								}
 					

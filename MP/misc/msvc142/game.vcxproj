@@ -69,28 +69,28 @@
     <_ProjectFileVersion>12.0.30501.0</_ProjectFileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release TA|Win32'">
-    <OutDir>..\..\build\release_ta-msvc142-x86\missionpack\</OutDir>
-    <IntDir>..\..\build\release_ta-msvc142-x86\missionpack\game\</IntDir>
+    <OutDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\</OutDir>
+    <IntDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\Intermediate\</IntDir>
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>qagamex86</TargetName>
+    <TargetName>$(ProjectName)_mp_$(PlatformShortName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>..\..\build\debug-msvc142-x86\$(Configuration)\$(ProjectName)\</OutDir>
-    <IntDir>..\..\build\debug-msvc142-x86\$(Configuration)\$(ProjectName)\Intermediate\</IntDir>
+    <OutDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\</OutDir>
+    <IntDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\Intermediate\</IntDir>
     <LinkIncremental>true</LinkIncremental>
     <TargetName>$(ProjectName)_mp_$(PlatformShortName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>..\..\build\release-msvc142-x86\baseq3\</OutDir>
-    <IntDir>..\..\build\release-msvc142-x86\baseq3\game\</IntDir>
+    <OutDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\</OutDir>
+    <IntDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\Intermediate\</IntDir>
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>qagamex86</TargetName>
+    <TargetName>$(ProjectName)_mp_$(PlatformShortName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug TA|Win32'">
-    <OutDir>..\..\build\debug_ta-msvc142-x86\missionpack\</OutDir>
-    <IntDir>..\..\build\debug_ta-msvc142-x86\missionpack\game\</IntDir>
+    <OutDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\</OutDir>
+    <IntDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\Intermediate\</IntDir>
     <LinkIncremental>true</LinkIncremental>
-    <TargetName>qagamex86</TargetName>
+    <TargetName>$(ProjectName)_mp_$(PlatformShortName)</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug TA|Win32'">
     <Midl>
@@ -124,7 +124,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>winmm.lib;..\..\code\qcommon\jansson_win\jansson.lib;..\..\code\libs\win32\libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)qagamex86.dll</OutputFile>
+      <OutputFile>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <ModuleDefinitionFile>.\game.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -163,16 +163,16 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <CompileAs>CompileAsC</CompileAs>
-      <AdditionalIncludeDirectories>..\..\code\qcommon\jansson_win;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalUsingDirectories>..\..\code\qcommon\jansson_win;%(AdditionalUsingDirectories)</AdditionalUsingDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalUsingDirectories>%(AdditionalUsingDirectories)</AdditionalUsingDirectories>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>winmm.lib;..\..\code\libs\win32\libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\..\build\debug-msvc142-x86\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalDependencies>..\..\code\qcommon\jansson_win\jansson.lib;winmm.lib;..\..\code\libs\win32\libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <ModuleDefinitionFile>.\game.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -187,6 +187,12 @@
       <TargetMachine>MachineX86</TargetMachine>
       <AdditionalLibraryDirectories>..\..\code\qcommon\jansson_win\;..\libs\libcurl\include;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent>
+      <Command>..\..\libs\zip.exe -uj "$(RTCWBASE)\$(RTCW_MOD_NAME)\rtcwpro_bin.pk3" "$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)"
+xcopy "$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)"  "$(RTCWBASE)\$(RTCW_MOD_NAME)\" /Y
+xcopy "$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)"  "C:\Users\Michael\OneDrive\Documents\RTCW\$(RTCW_MOD_NAME)\" /Y</Command>
+      <Message> Copying file to $(RTCWBASE) ..</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Midl>
@@ -221,7 +227,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>winmm.lib;..\..\code\qcommon\jansson_win\jansson.lib;..\..\code\libs\win32\libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)qagamex86.dll</OutputFile>
+      <OutputFile>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <ModuleDefinitionFile>.\game.def</ModuleDefinitionFile>
       <ProgramDatabaseFile>$(IntDir)qagamex86.pdb</ProgramDatabaseFile>
@@ -269,7 +275,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>winmm.lib;..\..\code\qcommon\jansson_win\jansson.lib;..\..\code\libs\win32\libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(IntDir)qagamex86.dll</OutputFile>
+      <OutputFile>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <ModuleDefinitionFile>.\game.def</ModuleDefinitionFile>
       <ProgramDatabaseFile>$(IntDir)qagamex86.pdb</ProgramDatabaseFile>
@@ -438,6 +444,7 @@
     <ClCompile Include="..\..\code\game\g_alarm.c" />
     <ClCompile Include="..\..\code\game\g_antilag.c" />
     <ClCompile Include="..\..\code\game\g_antiwarp.c" />
+    <ClCompile Include="..\..\code\game\g_apiquery.c" />
     <ClCompile Include="..\..\code\game\g_bot.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug TA|Win32'">Disabled</Optimization>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug TA|Win32'">WIN32;_DEBUG;_WINDOWS;BUILDING_REF_GL;DEBUG;MISSIONPACK;QAGAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -499,6 +506,7 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MaxSpeed</Optimization>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">WIN32;NDEBUG;_WINDOWS;GLOBALRANK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="..\..\code\game\g_json.c" />
     <ClCompile Include="..\..\code\game\g_main.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug TA|Win32'">Disabled</Optimization>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug TA|Win32'">WIN32;_DEBUG;_WINDOWS;BUILDING_REF_GL;DEBUG;MISSIONPACK;QAGAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>

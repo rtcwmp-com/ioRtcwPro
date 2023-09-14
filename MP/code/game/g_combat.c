@@ -396,11 +396,11 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
         // GameStats logging .... probably want to control this via cvar (as well as do a better job in general)
         if (g_gameStatslog.integer) {
             if (killer == self->s.number) {
-                 //G_writeGeneralEvent(self,self,obit,eventSuicide);
+                 G_writeGeneralEvent(self,self,obit,eventSuicide);
             }
             else if (OnSameTeam(attacker, self)) {
                 if ( attacker->client ) {
-                    //G_writeGeneralEvent(attacker,self,obit,eventTeamkill);
+                    G_writeGeneralEvent(attacker,self,obit,eventTeamkill);
                 }
             }
             else {
@@ -408,7 +408,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
                     int weapID;
                     weapID = G_weapStatIndex_MOD( meansOfDeath );
                     //G_writeGeneralEvent(attacker,self,obit,eventKill);
-					//G_writeGeneralEvent(attacker, self, va("%s", aWeaponInfo[weapID].pszName), eventKill);
+					G_writeGeneralEvent(attacker, self, va("%s", aWeaponInfo[weapID].pszName), eventKill);
                 }
             }
 
@@ -562,7 +562,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		}
 
 		if ( item ) {
-			//G_writeObjectiveEvent(self, objDropped  );
+			G_writeObjectiveEvent(self, objDropped  );
 			launchvel[0] = 0;
 			launchvel[1] = 0;
 			launchvel[2] = 40;
@@ -629,7 +629,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 // jpw
 	// RtcwPro - store the value for player YAW so we can restore on revive
 	// the value STAT_DEAD_YAW can change with lookatkiller etc
-	self->client->ps.persistant[PERS_DEATH_YAW] = SHORT2ANGLE(self->client->pers.cmd.angles[YAW] + self->client->ps.delta_angles[YAW]);
+	self->client->pers.deathYaw = SHORT2ANGLE(self->client->pers.cmd.angles[YAW] + self->client->ps.delta_angles[YAW]);
 
 	//self->s.angles[2] = 0;
 	LookAtKiller( self, inflictor, attacker );
@@ -653,8 +653,8 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	memset( self->client->ps.powerups, 0, sizeof( self->client->ps.powerups ) );
 
 	// RTCWPro - update ready status
-	//if (g_gamestate.integer == GS_WARMUP || g_gamestate.integer == GS_WAITING_FOR_PLAYERS) // only do this during warmup
-	//	self->client->ps.powerups[PW_READY] = (player_ready_status[self->client->ps.clientNum].isReady == 1) ? INT_MAX : 0;
+	if (g_gamestate.integer == GS_WARMUP || g_gamestate.integer == GS_WAITING_FOR_PLAYERS) // only do this during warmup
+		self->client->ps.powerups[PW_READY] = (player_ready_status[self->client->ps.clientNum].isReady == 1) ? INT_MAX : 0;
 
 
 	// never gib in a nodrop
@@ -1353,9 +1353,9 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			targ->client->ps.pm_time = t;
 			targ->client->ps.pm_flags |= PMF_TIME_KNOCKBACK;
 
-			if (g_debugDamage.integer) {
-				AP(va("print \"knockback: %i\n\"", t));
-			}
+			//if (g_debugDamage.integer) {
+			//	AP(va("print \"knockback: %i\n\"", t));
+			//}
 		}
 	}
 
@@ -1445,11 +1445,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 		if ( client && attacker && attacker->client
 			 && attacker->client->sess.sessionTeam != targ->client->sess.sessionTeam ) {
 			G_addStatsHeadShot( attacker, mod );
-		} // End
 
-		if ( g_debugDamage.integer ) {
-			G_Printf( "client:%i health:%i damage:%i armor:%i\n", targ->s.number,
-					  targ->health, take, asave );
 		}
 	}
 

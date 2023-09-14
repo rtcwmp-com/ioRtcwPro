@@ -464,7 +464,7 @@ void Weapon_Syringe( gentity_t *ent ) {
 					ent->client->sess.aWeaponStats[WS_SYRINGE].hits++;
 					ent->client->sess.revives++;
 					if (g_gameStatslog.integer) {
-                        //G_writeGeneralEvent(traceEnt,ent," ",eventRevive);
+                        G_writeGeneralEvent(traceEnt,ent," ",eventRevive);
                        //// G_writeReviveEvent (traceEnt->client->pers.netname, ent->client->pers.netname);
 					}
 				} // End
@@ -687,7 +687,7 @@ void Weapon_Engineer( gentity_t *ent ) {
 										ent->client->sess.dyn_planted++;
 										if (g_gameStatslog.integer) {
 											////G_writeObjectiveEvent((( hit->spawnflags & AXIS_OBJECTIVE ) && ( ent->client->sess.sessionTeam == TEAM_BLUE )) ? "Allied" : "Axis", "Dynamite planted", va("%s",ent->client->pers.netname)   );
-											//G_writeObjectiveEvent(ent, objDynPlant);
+										G_writeObjectiveEvent(ent, objDynPlant);
 
 										}
 									}
@@ -700,7 +700,7 @@ void Weapon_Engineer( gentity_t *ent ) {
 										ent->client->sess.dyn_planted++;
 										if (g_gameStatslog.integer) {
 											////G_writeObjectiveEvent((( hit->spawnflags & AXIS_OBJECTIVE ) && ( ent->client->sess.sessionTeam == TEAM_BLUE )) ? "Allied" : "Axis", "Dynamite planted", va("%s",ent->client->pers.netname)   );
-											//G_writeObjectiveEvent(ent, objDynPlant);
+										G_writeObjectiveEvent(ent, objDynPlant);
 
 										}
 									}
@@ -771,6 +771,17 @@ void Weapon_Engineer( gentity_t *ent ) {
 									hit->spawnflags &= ~OBJECTIVE_DESTROYED; // "re-activate" objective since it wasn't destroyed.  kludgy, I know; see G_ExplodeMissile for the other half
 								}
 								trap_SendServerCommand( -1, "cp \"Axis engineer disarmed the Dynamite!\n\"" );
+
+								if (g_gamestate.integer == GS_PLAYING)
+								{
+									ent->client->sess.dyn_defused++;
+
+									if (g_gameStatslog.integer) {
+										G_writeObjectiveEvent(ent, objDynDefuse);
+										//G_writeObjectiveEvent("Axis", "Dynamite defused", va("%s",ent->client->pers.netname)  );
+									}
+								}
+
 								traceEnt->s.eventParm = G_SoundIndex( "sound/multiplayer/axis/g-dynamite_defused.wav" );
 								traceEnt->s.teamNum = TEAM_RED;
 							} else { // TEAM_BLUE
@@ -780,6 +791,17 @@ void Weapon_Engineer( gentity_t *ent ) {
 									hit->spawnflags &= ~OBJECTIVE_DESTROYED; // "re-activate" objective since it wasn't destroyed
 								}
 								trap_SendServerCommand( -1, "cp \"Allied engineer disarmed the Dynamite!\n\"" );
+
+								if (g_gamestate.integer == GS_PLAYING)
+								{
+									ent->client->sess.dyn_defused++;
+
+									if (g_gameStatslog.integer) {
+										G_writeObjectiveEvent(ent, objDynDefuse);
+										// G_writeObjectiveEvent("Allies", "Dynamite defused", va("%s",ent->client->pers.netname)  );
+									}
+								}
+
 								traceEnt->s.eventParm = G_SoundIndex( "sound/multiplayer/allies/a-dynamite_defused.wav" );
 								traceEnt->s.teamNum = TEAM_BLUE;
 							}
@@ -1978,7 +2000,7 @@ void Bullet_Fire( gentity_t *ent, float spread, int damage ) {
 		// RTCWPro added cg_antilag client check (RtCW pub port)
 		if (g_antilag.integer && (ent->client->pers.antilag) && !(ent->r.svFlags & SVF_BOT))
 		{
-			G_TimeShiftAllClients(ent->client->pers.cmd.serverTime, ent);
+			G_TimeShiftAllClientsNobo(ent->client->pers.cmd.serverTime, ent);
 		}
 
 		// update head entitiy positions and link them into the world (for headshots).
@@ -1994,7 +2016,7 @@ void Bullet_Fire( gentity_t *ent, float spread, int damage ) {
 		// RTCWPro added cg_antilag client check (RtCW pub port)
 		if (g_antilag.integer && (ent->client->pers.antilag) && !(ent->r.svFlags & SVF_BOT))
 		{
-			G_UnTimeShiftAllClients(ent);
+			G_UnTimeShiftAllClientsNobo(ent);
 		}
 
 		// unlink all head entities so they don't collide with players.
@@ -2422,7 +2444,7 @@ void VenomPattern( vec3_t origin, vec3_t origin2, int seed, gentity_t *ent ) {
 	// L0 Antilag
     if ( g_antilag.integer && ent->client &&
         !(ent->r.svFlags & SVF_BOT) ) {
-        G_TimeShiftAllClients( ent->client->pers.cmd.serverTime, ent );
+        G_TimeShiftAllClientsNobo( ent->client->pers.cmd.serverTime, ent );
     } // end
 
 
@@ -2450,7 +2472,7 @@ void VenomPattern( vec3_t origin, vec3_t origin2, int seed, gentity_t *ent ) {
 	// L0 - Antilag
     if ( g_antilag.integer && ent->client &&
         !(ent->r.svFlags & SVF_BOT) ) {
-        G_UnTimeShiftAllClients( ent );
+        G_UnTimeShiftAllClientsNobo( ent );
     } // end
 }
 

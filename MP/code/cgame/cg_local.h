@@ -754,6 +754,7 @@ typedef struct {
 	int playerAmmoClip;
 	int playerWeapon;
 	int playerNades;
+	int latchedClass;
 } clientInfo_t;
 
 
@@ -1731,6 +1732,13 @@ typedef struct {
 	// Country Flags
 	qhandle_t countryFlags;
 
+	// Objective icon
+	qhandle_t treasureIcon;
+
+	// arty and airstrike
+	qhandle_t artillery;
+	qhandle_t airstrike;
+
 	// chats
 	sfxHandle_t normalChat;
 	sfxHandle_t teamChat;
@@ -1941,6 +1949,7 @@ extern vmCvar_t cg_cycleAllWeaps;
 extern vmCvar_t cg_drawAllWeaps;
 extern vmCvar_t cg_drawRewards;
 extern vmCvar_t cg_drawTeamOverlay;
+extern vmCvar_t cg_teamOverlayLatchedClass;
 extern vmCvar_t cg_uselessNostalgia;         // JPW NERVE
 extern vmCvar_t cg_crosshairX;
 extern vmCvar_t cg_crosshairY;
@@ -2203,6 +2212,7 @@ extern vmCvar_t cg_drawFrags;
 extern vmCvar_t cg_fragsY;
 extern vmCvar_t cg_fragsWidth;
 extern vmCvar_t cg_fixedphysicsfps;
+extern vmCvar_t cg_debugDamage;
 //
 // cg_main.c
 //

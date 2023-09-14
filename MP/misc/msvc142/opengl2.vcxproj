@@ -69,63 +69,62 @@
     <_ProjectFileVersion>12.0.30501.0</_ProjectFileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release TA|Win32'">
-    <OutDir>..\..\build\release_ta-msvc142-x86\</OutDir>
-    <IntDir>..\..\build\release_ta-msvc142-x86\opengl2\</IntDir>
+    <OutDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\</OutDir>
+    <IntDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\intermediate\</IntDir>
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>renderer_opengl2_x86</TargetName>
+    <TargetName>renderer_mp_rend2_x86</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>..\..\build\debug-msvc142-x86\$(Configuration)\$(ProjectName)\</OutDir>
-    <IntDir>..\..\build\debug-msvc142-x86\$(Configuration)\$(ProjectName)\intermediate\</IntDir>
+    <OutDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\</OutDir>
+    <IntDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\intermediate\</IntDir>
     <LinkIncremental>true</LinkIncremental>
-    <TargetName>renderer_mp_opengl2_x86</TargetName>
+    <TargetName>renderer_mp_rend2_x86</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>..\..\build\release-msvc142-x86\</OutDir>
-    <IntDir>..\..\build\release-msvc142-x86\opengl2\</IntDir>
+    <OutDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\</OutDir>
+    <IntDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\intermediate\</IntDir>
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>renderer_opengl2_x86</TargetName>
+    <TargetName>renderer_mp_rend2_x86</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug TA|Win32'">
-    <OutDir>..\..\build\debug_ta-msvc142-x86\</OutDir>
-    <IntDir>..\..\build\debug_ta-msvc142-x86\opengl2\</IntDir>
+    <OutDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\</OutDir>
+    <IntDir>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)\intermediate\</IntDir>
     <LinkIncremental>true</LinkIncremental>
-    <TargetName>renderer_opengl2_x86</TargetName>
+    <TargetName>renderer_mp_rend2_x86</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release TA|Win32'">
     <PreBuildEvent>
       <Message>Stringify GLSL files</Message>
-      <Command>mkdir ..\..\build\dynamic
-mkdir ..\..\build\dynamic\renderergl2
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\bokeh_fp.glsl ..\..\build\dynamic\renderergl2\bokeh_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\bokeh_vp.glsl ..\..\build\dynamic\renderergl2\bokeh_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\calclevels4x_fp.glsl ..\..\build\dynamic\renderergl2\calclevels4x_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\calclevels4x_vp.glsl ..\..\build\dynamic\renderergl2\calclevels4x_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\depthblur_fp.glsl ..\..\build\dynamic\renderergl2\depthblur_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\depthblur_vp.glsl ..\..\build\dynamic\renderergl2\depthblur_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\dlight_fp.glsl ..\..\build\dynamic\renderergl2\dlight_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\dlight_vp.glsl ..\..\build\dynamic\renderergl2\dlight_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\down4x_fp.glsl ..\..\build\dynamic\renderergl2\down4x_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\down4x_vp.glsl ..\..\build\dynamic\renderergl2\down4x_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\fogpass_fp.glsl ..\..\build\dynamic\renderergl2\fogpass_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\fogpass_vp.glsl ..\..\build\dynamic\renderergl2\fogpass_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\generic_fp.glsl ..\..\build\dynamic\renderergl2\generic_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\generic_vp.glsl ..\..\build\dynamic\renderergl2\generic_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\lightall_fp.glsl ..\..\build\dynamic\renderergl2\lightall_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\lightall_vp.glsl ..\..\build\dynamic\renderergl2\lightall_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\pshadow_fp.glsl ..\..\build\dynamic\renderergl2\pshadow_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\pshadow_vp.glsl ..\..\build\dynamic\renderergl2\pshadow_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\shadowfill_fp.glsl ..\..\build\dynamic\renderergl2\shadowfill_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\shadowfill_vp.glsl ..\..\build\dynamic\renderergl2\shadowfill_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\shadowmask_fp.glsl ..\..\build\dynamic\renderergl2\shadowmask_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\shadowmask_vp.glsl ..\..\build\dynamic\renderergl2\shadowmask_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\ssao_fp.glsl ..\..\build\dynamic\renderergl2\ssao_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\ssao_vp.glsl ..\..\build\dynamic\renderergl2\ssao_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\texturecolor_fp.glsl ..\..\build\dynamic\renderergl2\texturecolor_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\texturecolor_vp.glsl ..\..\build\dynamic\renderergl2\texturecolor_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\tonemap_fp.glsl ..\..\build\dynamic\renderergl2\tonemap_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\tonemap_vp.glsl ..\..\build\dynamic\renderergl2\tonemap_vp.c
-</Command>
+      <Command>mkdir ..\..\Builds\dynamic
+mkdir ..\..\Builds\dynamic\rend2
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\bokeh_fp.glsl ..\..\Builds\dynamic\rend2\bokeh_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\bokeh_vp.glsl ..\..\Builds\dynamic\rend2\bokeh_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\calclevels4x_fp.glsl ..\..\Builds\dynamic\rend2\calclevels4x_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\calclevels4x_vp.glsl ..\..\Builds\dynamic\rend2\calclevels4x_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\depthblur_fp.glsl ..\..\Builds\dynamic\rend2\depthblur_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\depthblur_vp.glsl ..\..\Builds\dynamic\rend2\depthblur_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\dlight_fp.glsl ..\..\Builds\dynamic\rend2\dlight_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\dlight_vp.glsl ..\..\Builds\dynamic\rend2\dlight_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\down4x_fp.glsl ..\..\Builds\dynamic\rend2\down4x_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\down4x_vp.glsl ..\..\Builds\dynamic\rend2\down4x_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\fogpass_fp.glsl ..\..\Builds\dynamic\rend2\fogpass_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\fogpass_vp.glsl ..\..\Builds\dynamic\rend2\fogpass_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\generic_fp.glsl ..\..\Builds\dynamic\rend2\generic_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\generic_vp.glsl ..\..\Builds\dynamic\rend2\generic_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\lightall_fp.glsl ..\..\Builds\dynamic\rend2\lightall_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\lightall_vp.glsl ..\..\Builds\dynamic\rend2\lightall_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\pshadow_fp.glsl ..\..\Builds\dynamic\rend2\pshadow_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\pshadow_vp.glsl ..\..\Builds\dynamic\rend2\pshadow_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\shadowfill_fp.glsl ..\..\Builds\dynamic\rend2\shadowfill_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\shadowfill_vp.glsl ..\..\Builds\dynamic\rend2\shadowfill_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\shadowmask_fp.glsl ..\..\Builds\dynamic\rend2\shadowmask_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\shadowmask_vp.glsl ..\..\Builds\dynamic\rend2\shadowmask_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\ssao_fp.glsl ..\..\Builds\dynamic\rend2\ssao_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\ssao_vp.glsl ..\..\Builds\dynamic\rend2\ssao_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\texturecolor_fp.glsl ..\..\Builds\dynamic\rend2\texturecolor_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\texturecolor_vp.glsl ..\..\Builds\dynamic\rend2\texturecolor_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\tonemap_fp.glsl ..\..\Builds\dynamic\rend2\tonemap_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\tonemap_vp.glsl ..\..\Builds\dynamic\rend2\tonemap_vp.c</Command>
     </PreBuildEvent>
     <Midl>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -159,7 +158,7 @@ cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\tonemap_vp.glsl ..\..
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>user32.lib;advapi32.lib;winmm.lib;wsock32.lib;ws2_32.lib;SDL2.lib;OpenGL32.lib;msvcrt.lib;psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)renderer_opengl2_x86.dll</OutputFile>
+      <OutputFile>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>..\..\code\libs\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -180,37 +179,36 @@ cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\tonemap_vp.glsl ..\..
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <PreBuildEvent>
       <Message>Stringify GLSL files</Message>
-      <Command>mkdir ..\..\build\dynamic
-mkdir ..\..\build\dynamic\rend2
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\bokeh_fp.glsl ..\..\build\dynamic\rend2\bokeh_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\bokeh_vp.glsl ..\..\build\dynamic\rend2\bokeh_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\calclevels4x_fp.glsl ..\..\build\dynamic\rend2\calclevels4x_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\calclevels4x_vp.glsl ..\..\build\dynamic\rend2\calclevels4x_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\depthblur_fp.glsl ..\..\build\dynamic\rend2\depthblur_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\depthblur_vp.glsl ..\..\build\dynamic\rend2\depthblur_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\dlight_fp.glsl ..\..\build\dynamic\rend2\dlight_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\dlight_vp.glsl ..\..\build\dynamic\rend2\dlight_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\down4x_fp.glsl ..\..\build\dynamic\rend2\down4x_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\down4x_vp.glsl ..\..\build\dynamic\rend2\down4x_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\fogpass_fp.glsl ..\..\build\dynamic\rend2\fogpass_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\fogpass_vp.glsl ..\..\build\dynamic\rend2\fogpass_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\generic_fp.glsl ..\..\build\dynamic\rend2\generic_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\generic_vp.glsl ..\..\build\dynamic\rend2\generic_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\lightall_fp.glsl ..\..\build\dynamic\rend2\lightall_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\lightall_vp.glsl ..\..\build\dynamic\rend2\lightall_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\pshadow_fp.glsl ..\..\build\dynamic\rend2\pshadow_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\pshadow_vp.glsl ..\..\build\dynamic\rend2\pshadow_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\shadowfill_fp.glsl ..\..\build\dynamic\rend2\shadowfill_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\shadowfill_vp.glsl ..\..\build\dynamic\rend2\shadowfill_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\shadowmask_fp.glsl ..\..\build\dynamic\rend2\shadowmask_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\shadowmask_vp.glsl ..\..\build\dynamic\rend2\shadowmask_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\ssao_fp.glsl ..\..\build\dynamic\rend2\ssao_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\ssao_vp.glsl ..\..\build\dynamic\rend2\ssao_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\texturecolor_fp.glsl ..\..\build\dynamic\rend2\texturecolor_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\texturecolor_vp.glsl ..\..\build\dynamic\rend2\texturecolor_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\tonemap_fp.glsl ..\..\build\dynamic\rend2\tonemap_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\tonemap_vp.glsl ..\..\build\dynamic\rend2\tonemap_vp.c
-</Command>
+      <Command>mkdir ..\..\Builds\dynamic
+mkdir ..\..\Builds\dynamic\rend2
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\bokeh_fp.glsl ..\..\Builds\dynamic\rend2\bokeh_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\bokeh_vp.glsl ..\..\Builds\dynamic\rend2\bokeh_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\calclevels4x_fp.glsl ..\..\Builds\dynamic\rend2\calclevels4x_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\calclevels4x_vp.glsl ..\..\Builds\dynamic\rend2\calclevels4x_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\depthblur_fp.glsl ..\..\Builds\dynamic\rend2\depthblur_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\depthblur_vp.glsl ..\..\Builds\dynamic\rend2\depthblur_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\dlight_fp.glsl ..\..\Builds\dynamic\rend2\dlight_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\dlight_vp.glsl ..\..\Builds\dynamic\rend2\dlight_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\down4x_fp.glsl ..\..\Builds\dynamic\rend2\down4x_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\down4x_vp.glsl ..\..\Builds\dynamic\rend2\down4x_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\fogpass_fp.glsl ..\..\Builds\dynamic\rend2\fogpass_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\fogpass_vp.glsl ..\..\Builds\dynamic\rend2\fogpass_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\generic_fp.glsl ..\..\Builds\dynamic\rend2\generic_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\generic_vp.glsl ..\..\Builds\dynamic\rend2\generic_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\lightall_fp.glsl ..\..\Builds\dynamic\rend2\lightall_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\lightall_vp.glsl ..\..\Builds\dynamic\rend2\lightall_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\pshadow_fp.glsl ..\..\Builds\dynamic\rend2\pshadow_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\pshadow_vp.glsl ..\..\Builds\dynamic\rend2\pshadow_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\shadowfill_fp.glsl ..\..\Builds\dynamic\rend2\shadowfill_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\shadowfill_vp.glsl ..\..\Builds\dynamic\rend2\shadowfill_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\shadowmask_fp.glsl ..\..\Builds\dynamic\rend2\shadowmask_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\shadowmask_vp.glsl ..\..\Builds\dynamic\rend2\shadowmask_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\ssao_fp.glsl ..\..\Builds\dynamic\rend2\ssao_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\ssao_vp.glsl ..\..\Builds\dynamic\rend2\ssao_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\texturecolor_fp.glsl ..\..\Builds\dynamic\rend2\texturecolor_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\texturecolor_vp.glsl ..\..\Builds\dynamic\rend2\texturecolor_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\tonemap_fp.glsl ..\..\Builds\dynamic\rend2\tonemap_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\tonemap_vp.glsl ..\..\Builds\dynamic\rend2\tonemap_vp.c</Command>
     </PreBuildEvent>
     <Midl>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -245,7 +243,7 @@ cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\tonemap_vp.glsl ..\..\build
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>user32.lib;advapi32.lib;winmm.lib;wsock32.lib;ws2_32.lib;SDL2.lib;OpenGL32.lib;msvcrt.lib;psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\..\build\debug-msvc142-x86\$(Configuration)\$(TargetName)$(TargetExt)</OutputFile>
+      <OutputFile>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>..\..\code\libs\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -266,37 +264,36 @@ cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\tonemap_vp.glsl ..\..\build
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <PreBuildEvent>
       <Message>Stringify GLSL files</Message>
-      <Command>mkdir ..\..\build\dynamic
-mkdir ..\..\build\dynamic\renderergl2
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\bokeh_fp.glsl ..\..\build\dynamic\renderergl2\bokeh_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\bokeh_vp.glsl ..\..\build\dynamic\renderergl2\bokeh_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\calclevels4x_fp.glsl ..\..\build\dynamic\renderergl2\calclevels4x_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\calclevels4x_vp.glsl ..\..\build\dynamic\renderergl2\calclevels4x_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\depthblur_fp.glsl ..\..\build\dynamic\renderergl2\depthblur_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\depthblur_vp.glsl ..\..\build\dynamic\renderergl2\depthblur_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\dlight_fp.glsl ..\..\build\dynamic\renderergl2\dlight_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\dlight_vp.glsl ..\..\build\dynamic\renderergl2\dlight_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\down4x_fp.glsl ..\..\build\dynamic\renderergl2\down4x_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\down4x_vp.glsl ..\..\build\dynamic\renderergl2\down4x_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\fogpass_fp.glsl ..\..\build\dynamic\renderergl2\fogpass_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\fogpass_vp.glsl ..\..\build\dynamic\renderergl2\fogpass_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\generic_fp.glsl ..\..\build\dynamic\renderergl2\generic_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\generic_vp.glsl ..\..\build\dynamic\renderergl2\generic_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\lightall_fp.glsl ..\..\build\dynamic\renderergl2\lightall_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\lightall_vp.glsl ..\..\build\dynamic\renderergl2\lightall_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\pshadow_fp.glsl ..\..\build\dynamic\renderergl2\pshadow_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\pshadow_vp.glsl ..\..\build\dynamic\renderergl2\pshadow_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\shadowfill_fp.glsl ..\..\build\dynamic\renderergl2\shadowfill_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\shadowfill_vp.glsl ..\..\build\dynamic\renderergl2\shadowfill_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\shadowmask_fp.glsl ..\..\build\dynamic\renderergl2\shadowmask_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\shadowmask_vp.glsl ..\..\build\dynamic\renderergl2\shadowmask_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\ssao_fp.glsl ..\..\build\dynamic\renderergl2\ssao_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\ssao_vp.glsl ..\..\build\dynamic\renderergl2\ssao_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\texturecolor_fp.glsl ..\..\build\dynamic\renderergl2\texturecolor_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\texturecolor_vp.glsl ..\..\build\dynamic\renderergl2\texturecolor_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\tonemap_fp.glsl ..\..\build\dynamic\renderergl2\tonemap_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\tonemap_vp.glsl ..\..\build\dynamic\renderergl2\tonemap_vp.c
-</Command>
+      <Command>mkdir ..\..\Builds\dynamic
+mkdir ..\..\Builds\dynamic\rend2
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\bokeh_fp.glsl ..\..\Builds\dynamic\rend2\bokeh_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\bokeh_vp.glsl ..\..\Builds\dynamic\rend2\bokeh_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\calclevels4x_fp.glsl ..\..\Builds\dynamic\rend2\calclevels4x_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\calclevels4x_vp.glsl ..\..\Builds\dynamic\rend2\calclevels4x_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\depthblur_fp.glsl ..\..\Builds\dynamic\rend2\depthblur_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\depthblur_vp.glsl ..\..\Builds\dynamic\rend2\depthblur_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\dlight_fp.glsl ..\..\Builds\dynamic\rend2\dlight_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\dlight_vp.glsl ..\..\Builds\dynamic\rend2\dlight_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\down4x_fp.glsl ..\..\Builds\dynamic\rend2\down4x_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\down4x_vp.glsl ..\..\Builds\dynamic\rend2\down4x_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\fogpass_fp.glsl ..\..\Builds\dynamic\rend2\fogpass_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\fogpass_vp.glsl ..\..\Builds\dynamic\rend2\fogpass_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\generic_fp.glsl ..\..\Builds\dynamic\rend2\generic_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\generic_vp.glsl ..\..\Builds\dynamic\rend2\generic_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\lightall_fp.glsl ..\..\Builds\dynamic\rend2\lightall_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\lightall_vp.glsl ..\..\Builds\dynamic\rend2\lightall_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\pshadow_fp.glsl ..\..\Builds\dynamic\rend2\pshadow_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\pshadow_vp.glsl ..\..\Builds\dynamic\rend2\pshadow_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\shadowfill_fp.glsl ..\..\Builds\dynamic\rend2\shadowfill_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\shadowfill_vp.glsl ..\..\Builds\dynamic\rend2\shadowfill_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\shadowmask_fp.glsl ..\..\Builds\dynamic\rend2\shadowmask_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\shadowmask_vp.glsl ..\..\Builds\dynamic\rend2\shadowmask_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\ssao_fp.glsl ..\..\Builds\dynamic\rend2\ssao_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\ssao_vp.glsl ..\..\Builds\dynamic\rend2\ssao_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\texturecolor_fp.glsl ..\..\Builds\dynamic\rend2\texturecolor_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\texturecolor_vp.glsl ..\..\Builds\dynamic\rend2\texturecolor_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\tonemap_fp.glsl ..\..\Builds\dynamic\rend2\tonemap_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\tonemap_vp.glsl ..\..\Builds\dynamic\rend2\tonemap_vp.c</Command>
     </PreBuildEvent>
     <Midl>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -330,7 +327,7 @@ cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\tonemap_vp.glsl ..\..
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>user32.lib;advapi32.lib;winmm.lib;wsock32.lib;ws2_32.lib;SDL2.lib;OpenGL32.lib;msvcrt.lib;psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)renderer_opengl2_x86.dll</OutputFile>
+      <OutputFile>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>..\..\code\libs\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -347,37 +344,36 @@ cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\tonemap_vp.glsl ..\..
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug TA|Win32'">
     <PreBuildEvent>
       <Message>Stringify GLSL files</Message>
-      <Command>mkdir ..\..\build\dynamic
-mkdir ..\..\build\dynamic\renderergl2
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\bokeh_fp.glsl ..\..\build\dynamic\renderergl2\bokeh_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\bokeh_vp.glsl ..\..\build\dynamic\renderergl2\bokeh_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\calclevels4x_fp.glsl ..\..\build\dynamic\renderergl2\calclevels4x_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\calclevels4x_vp.glsl ..\..\build\dynamic\renderergl2\calclevels4x_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\depthblur_fp.glsl ..\..\build\dynamic\renderergl2\depthblur_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\depthblur_vp.glsl ..\..\build\dynamic\renderergl2\depthblur_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\dlight_fp.glsl ..\..\build\dynamic\renderergl2\dlight_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\dlight_vp.glsl ..\..\build\dynamic\renderergl2\dlight_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\down4x_fp.glsl ..\..\build\dynamic\renderergl2\down4x_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\down4x_vp.glsl ..\..\build\dynamic\renderergl2\down4x_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\fogpass_fp.glsl ..\..\build\dynamic\renderergl2\fogpass_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\fogpass_vp.glsl ..\..\build\dynamic\renderergl2\fogpass_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\generic_fp.glsl ..\..\build\dynamic\renderergl2\generic_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\generic_vp.glsl ..\..\build\dynamic\renderergl2\generic_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\lightall_fp.glsl ..\..\build\dynamic\renderergl2\lightall_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\lightall_vp.glsl ..\..\build\dynamic\renderergl2\lightall_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\pshadow_fp.glsl ..\..\build\dynamic\renderergl2\pshadow_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\pshadow_vp.glsl ..\..\build\dynamic\renderergl2\pshadow_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\shadowfill_fp.glsl ..\..\build\dynamic\renderergl2\shadowfill_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\shadowfill_vp.glsl ..\..\build\dynamic\renderergl2\shadowfill_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\shadowmask_fp.glsl ..\..\build\dynamic\renderergl2\shadowmask_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\shadowmask_vp.glsl ..\..\build\dynamic\renderergl2\shadowmask_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\ssao_fp.glsl ..\..\build\dynamic\renderergl2\ssao_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\ssao_vp.glsl ..\..\build\dynamic\renderergl2\ssao_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\texturecolor_fp.glsl ..\..\build\dynamic\renderergl2\texturecolor_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\texturecolor_vp.glsl ..\..\build\dynamic\renderergl2\texturecolor_vp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\tonemap_fp.glsl ..\..\build\dynamic\renderergl2\tonemap_fp.c
-cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\tonemap_vp.glsl ..\..\build\dynamic\renderergl2\tonemap_vp.c
-</Command>
+      <Command>mkdir ..\..\Builds\dynamic
+mkdir ..\..\Builds\dynamic\rend2
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\bokeh_fp.glsl ..\..\Builds\dynamic\rend2\bokeh_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\bokeh_vp.glsl ..\..\Builds\dynamic\rend2\bokeh_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\calclevels4x_fp.glsl ..\..\Builds\dynamic\rend2\calclevels4x_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\calclevels4x_vp.glsl ..\..\Builds\dynamic\rend2\calclevels4x_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\depthblur_fp.glsl ..\..\Builds\dynamic\rend2\depthblur_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\depthblur_vp.glsl ..\..\Builds\dynamic\rend2\depthblur_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\dlight_fp.glsl ..\..\Builds\dynamic\rend2\dlight_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\dlight_vp.glsl ..\..\Builds\dynamic\rend2\dlight_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\down4x_fp.glsl ..\..\Builds\dynamic\rend2\down4x_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\down4x_vp.glsl ..\..\Builds\dynamic\rend2\down4x_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\fogpass_fp.glsl ..\..\Builds\dynamic\rend2\fogpass_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\fogpass_vp.glsl ..\..\Builds\dynamic\rend2\fogpass_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\generic_fp.glsl ..\..\Builds\dynamic\rend2\generic_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\generic_vp.glsl ..\..\Builds\dynamic\rend2\generic_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\lightall_fp.glsl ..\..\Builds\dynamic\rend2\lightall_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\lightall_vp.glsl ..\..\Builds\dynamic\rend2\lightall_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\pshadow_fp.glsl ..\..\Builds\dynamic\rend2\pshadow_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\pshadow_vp.glsl ..\..\Builds\dynamic\rend2\pshadow_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\shadowfill_fp.glsl ..\..\Builds\dynamic\rend2\shadowfill_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\shadowfill_vp.glsl ..\..\Builds\dynamic\rend2\shadowfill_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\shadowmask_fp.glsl ..\..\Builds\dynamic\rend2\shadowmask_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\shadowmask_vp.glsl ..\..\Builds\dynamic\rend2\shadowmask_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\ssao_fp.glsl ..\..\Builds\dynamic\rend2\ssao_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\ssao_vp.glsl ..\..\Builds\dynamic\rend2\ssao_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\texturecolor_fp.glsl ..\..\Builds\dynamic\rend2\texturecolor_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\texturecolor_vp.glsl ..\..\Builds\dynamic\rend2\texturecolor_vp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\tonemap_fp.glsl ..\..\Builds\dynamic\rend2\tonemap_fp.c
+cscript.exe glsl_stringify.vbs ..\..\code\rend2\glsl\tonemap_vp.glsl ..\..\Builds\dynamic\rend2\tonemap_vp.c</Command>
     </PreBuildEvent>
     <Midl>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -412,7 +408,7 @@ cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\tonemap_vp.glsl ..\..
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>user32.lib;advapi32.lib;winmm.lib;wsock32.lib;ws2_32.lib;SDL2.lib;OpenGL32.lib;msvcrt.lib;psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)renderer_opengl2_x86.dll</OutputFile>
+      <OutputFile>$(OUTPUTDIR)\$(Configuration)\$(ProjectName)\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>..\..\code\libs\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -431,34 +427,34 @@ cscript.exe glsl_stringify.vbs ..\..\code\renderergl2\glsl\tonemap_vp.glsl ..\..
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\build\dynamic\rend2\bokeh_fp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\bokeh_vp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\calclevels4x_fp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\calclevels4x_vp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\depthblur_fp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\depthblur_vp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\dlight_fp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\dlight_vp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\down4x_fp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\down4x_vp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\fogpass_fp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\fogpass_vp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\generic_fp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\generic_vp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\lightall_fp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\lightall_vp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\pshadow_fp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\pshadow_vp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\shadowfill_fp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\shadowfill_vp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\shadowmask_fp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\shadowmask_vp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\ssao_fp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\ssao_vp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\texturecolor_fp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\texturecolor_vp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\tonemap_fp.c" />
-    <ClCompile Include="..\..\build\dynamic\rend2\tonemap_vp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\bokeh_fp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\bokeh_vp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\calclevels4x_fp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\calclevels4x_vp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\depthblur_fp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\depthblur_vp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\dlight_fp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\dlight_vp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\down4x_fp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\down4x_vp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\fogpass_fp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\fogpass_vp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\generic_fp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\generic_vp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\lightall_fp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\lightall_vp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\pshadow_fp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\pshadow_vp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\shadowfill_fp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\shadowfill_vp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\shadowmask_fp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\shadowmask_vp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\ssao_fp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\ssao_vp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\texturecolor_fp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\texturecolor_vp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\tonemap_fp.c" />
+    <ClCompile Include="..\..\Builds\dynamic\rend2\tonemap_vp.c" />
     <ClCompile Include="..\..\code\jpeg-8c\jaricom.c" />
     <ClCompile Include="..\..\code\jpeg-8c\jcapimin.c" />
     <ClCompile Include="..\..\code\jpeg-8c\jcapistd.c" />

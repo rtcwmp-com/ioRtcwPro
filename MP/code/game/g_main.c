@@ -37,6 +37,7 @@ typedef struct {
 	int cvarFlags;
 	int modificationCount;          // for tracking changes
 	qboolean trackChange;           // track this variable, and announce if changed
+	qboolean fConfigReset;          // OSP: set this var to the default on a config reset
 	qboolean teamShader;      // track and if changed, update shader state
 } cvarTable_t;
 
@@ -85,6 +86,8 @@ vmCvar_t g_warmup;
 // NERVE - SMF
 vmCvar_t g_warmupLatch;
 vmCvar_t g_nextTimeLimit;
+vmCvar_t g_preciseTimeSet;
+vmCvar_t g_usePreciseConsoleTime;
 vmCvar_t g_showHeadshotRatio;
 vmCvar_t g_userTimeLimit;
 vmCvar_t g_userAlliedRespawnTime;
@@ -179,6 +182,9 @@ vmCvar_t g_stats_curl_submit_URL;
 vmCvar_t g_stats_curl_submit_headers;
 vmCvar_t g_gameStatslog; // temp cvar for event logging
 vmCvar_t g_statsDebug; // write in logfile to debug crashes
+vmCvar_t g_statsRetryCount;
+vmCvar_t g_statsRetryDelay;
+vmCvar_t g_apiquery_curl_URL;
 
 // Match
 vmCvar_t team_maxplayers;
@@ -199,7 +205,7 @@ vmCvar_t vote_allow_map;
 vmCvar_t vote_allow_matchreset;
 vmCvar_t vote_allow_mutespecs;
 vmCvar_t vote_allow_nextmap;
-vmCvar_t vote_allow_pub;
+//vmCvar_t vote_allow_pub;
 vmCvar_t vote_allow_referee;
 vmCvar_t vote_allow_shuffleteamsxp;
 vmCvar_t vote_allow_swapteams;
@@ -210,6 +216,7 @@ vmCvar_t vote_allow_antilag;
 vmCvar_t vote_allow_balancedteams;
 vmCvar_t vote_allow_muting;
 vmCvar_t vote_allow_cointoss;
+vmCvar_t vote_allow_knifeonly;
 vmCvar_t vote_limit;
 vmCvar_t vote_percent;
 vmCvar_t refereePassword;
@@ -347,6 +354,8 @@ cvarTable_t gameCvarTable[] = {
 	{ &g_warmupLatch, "g_warmupLatch", "1", 0, 0, qfalse },
 
 	{ &g_nextTimeLimit, "g_nextTimeLimit", "0", CVAR_WOLFINFO, 0, qfalse  },
+	{ &g_preciseTimeSet, "g_preciseTimeSet", "0", CVAR_WOLFINFO, 0, qfalse  },
+	{ &g_usePreciseConsoleTime, "g_usePreciseConsoleTime", "1", CVAR_WOLFINFO, 0, qfalse  },
 	{ &g_currentRound, "g_currentRound", "0", CVAR_WOLFINFO, 0, qfalse  },
 	{ &g_altStopwatchMode, "g_altStopwatchMode", "0", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_gamestate, "gamestate", "-1", CVAR_WOLFINFO | CVAR_ROM, 0, qfalse  },
@@ -369,6 +378,9 @@ cvarTable_t gameCvarTable[] = {
 	{ &g_stats_curl_submit, "g_stats_curl_submit", "0", CVAR_ARCHIVE, 0, qfalse  },
     { &g_stats_curl_submit_URL, "g_stats_curl_submit_URL", "https://rtcwproapi.donkanator.com/submit", CVAR_ARCHIVE, 0, qfalse  },
     { &g_stats_curl_submit_headers, "g_stats_curl_submit_headers", "0", CVAR_ARCHIVE, 0, qfalse  }, // not used at the moment, headers are currently hardcoded
+	{ &g_statsRetryCount, "g_statsRetryCount", "3", CVAR_ARCHIVE, 0, qfalse  }, // number of attempts to send stats if first attempt fails
+	{ &g_statsRetryDelay, "g_statsRetryDelay", "2", CVAR_ARCHIVE, 0, qfalse  }, // delay in seconds to retry sending stats if first attempt fails
+	{ &g_apiquery_curl_URL, "g_apiquery_curl_URL", "https://rtcwproapi.donkanator.com/serverquery", CVAR_ARCHIVE, 0, qfalse  },
 	{ &g_password, "g_password", "", CVAR_USERINFO, 0, qfalse  },
 	{ &g_banIPs, "g_banIPs", "", CVAR_ARCHIVE, 0, qfalse  },
 	// show_bug.cgi?id=500
@@ -475,7 +487,7 @@ cvarTable_t gameCvarTable[] = {
 	{ &vote_allow_matchreset,   "vote_allow_matchreset", "1", 0, 0, qfalse, qfalse },
 	{ &vote_allow_mutespecs,    "vote_allow_mutespecs", "1", 0, 0, qfalse, qfalse },
 	{ &vote_allow_nextmap,      "vote_allow_nextmap", "1", 0, 0, qfalse, qfalse },
-	{ &vote_allow_pub,          "vote_allow_pub", "1", 0, 0, qfalse, qfalse },
+	//{ &vote_allow_pub,          "vote_allow_pub", "1", 0, 0, qfalse, qfalse },
 	{ &vote_allow_referee,      "vote_allow_referee", "0", 0, 0, qfalse, qfalse },
 	{ &vote_allow_swapteams,    "vote_allow_swapteams", "1", 0, 0, qfalse, qfalse },
 	{ &vote_allow_friendlyfire, "vote_allow_friendlyfire", "1", 0, 0, qfalse, qfalse },
@@ -485,6 +497,7 @@ cvarTable_t gameCvarTable[] = {
 	{ &vote_allow_balancedteams,"vote_allow_balancedteams", "1", 0, 0, qfalse, qfalse },
 	{ &vote_allow_muting,       "vote_allow_muting", "1", 0, 0, qfalse, qfalse },
 	{ &vote_allow_cointoss,		"vote_allow_cointoss", "1", 0, 0, qfalse, qfalse },
+	{ &vote_allow_knifeonly,	"vote_allow_knifeonly", "1", 0, 0, qfalse, qfalse },
 
 	// RTCWPro
 	{ &g_screenShake, "g_screenShake", "4", CVAR_ARCHIVE, 0, qtrue },
@@ -562,7 +575,8 @@ This is the only way control passes into the module.
 This must be the very first function compiled into the .q3vm file
 ================
 */
-Q_EXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6 ) {
+//Q_EXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6 ) {
+Q_EXPORT int vmMain( int command, int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6 ) {
 	switch ( command ) {
 	case GAME_INIT:
 		G_InitGame( arg0, arg1, arg2 );
@@ -603,6 +617,10 @@ Q_EXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr
 
 	case GAME_RETRIEVE_MOVESPEEDS_FROM_CLIENT:
 		G_RetrieveMoveSpeedsFromClient( arg0, (char *)arg1 );
+		return 0;
+
+	case G_RETURN_API_QUERY_RESPONSE:
+		trap_HandleApiResponse(arg0, (char*)arg1);
 		return 0;
 	}
 
@@ -1472,6 +1490,7 @@ G_InitGame
 void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	int i;
 	char cs[MAX_INFO_STRING];
+	char mapName[MAX_QPATH];
 
 	if ( trap_Cvar_VariableIntegerValue( "g_gametype" ) != GT_SINGLE_PLAYER ) {
 		G_Printf( "------- Game Initialization -------\n" );
@@ -1556,12 +1575,14 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
                 time_t unixTime = time(NULL);  // come back and make globally available
                 //char cs[MAX_STRING_CHARS];
 
-
+				// reset disconnect stats for each half round
+				memset(level.disconnectStats, 0, sizeof(level.disconnectStats));
+				level.disconnectCount = 0;
 
                 // we want to save some information for the match and round
                 if (g_currentRound.integer == 1) {
 
-					retval = 0; // G_read_round_jstats(); // load stats from round 1
+					retval = G_read_round_jstats(); // load stats from round 1
 
                     Q_strncpyz(level.jsonStatInfo.round_id,"2",sizeof(level.jsonStatInfo.round_id) );
                     if (retval == 0) {
@@ -1591,7 +1612,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
                      Q_strncpyz(level.jsonStatInfo.match_id,buf,sizeof(level.jsonStatInfo.match_id) );
                 }
 
-                //G_write_match_info();
+                G_write_match_info();
 
 
                 Com_sprintf( newGamestatFile, sizeof( newGamestatFile ), "stats/%d_%d_%d/gameStats_match_%s_round_%d_%s.json", ct.tm_mday, ct.tm_mon+1, 1900+ct.tm_year, buf,g_currentRound.integer+1,mapName);
@@ -1607,7 +1628,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 
                     Com_sprintf( level.jsonStatInfo.gameStatslogFileName, sizeof( level.jsonStatInfo.gameStatslogFileName ), "%s/%s/stats/%d_%d_%d/gameStats_match_%s_round_%d_%s.json", hpath, game,ct.tm_mday, ct.tm_mon+1, 1900+ct.tm_year, buf,g_currentRound.integer+1,mapName);
 
-                    //G_writeServerInfo();
+                    G_writeServerInfo();
 
 
                 }
@@ -1694,7 +1715,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 
 	// RtcwPro - auto cfg for each map
 	if (!restart && g_mapConfigs.integer){
-		char mapName[64];
+		//char mapName[64];
 
 		trap_Cvar_VariableStringBuffer("mapname", mapName, sizeof(mapName));
 
@@ -3243,6 +3264,10 @@ RtcwPro - check for team stuff..
 ================
 */
 void HandleEmptyTeams(void) {
+
+	// if there is a live Tournament Stopwatch round going do not reset the match if the other team rage quits
+	if (g_gamestate.integer == GS_PLAYING && g_tournament.integer == 1 && g_gametype.integer == GT_WOLF_STOPWATCH)
+		return;
 
 	if (g_gamestate.integer != GS_INTERMISSION) {
 		if (!level.axisPlayers && match_minplayers.integer > 1) {

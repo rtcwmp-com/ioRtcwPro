@@ -417,7 +417,8 @@ typedef enum {
 typedef intptr_t (QDECL *vmMainProc)(intptr_t callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9, intptr_t arg10, intptr_t arg11);
 
 void    VM_Init( void );
-vm_t	*VM_Create( const char *module, intptr_t (*systemCalls)(intptr_t *),
+//vm_t	*VM_Create( const char *module, intptr_t (*systemCalls)(intptr_t *),
+vm_t    *VM_Create( const char *module, int ( *systemCalls )( int * ),
 					vmInterpret_t interpret );
 // module should be bare: "cgame", not "cgame.dll" or "vm/cgame.qvm"
 
@@ -427,7 +428,8 @@ void	VM_Forced_Unload_Start(void);
 void	VM_Forced_Unload_Done(void);
 vm_t	*VM_Restart(vm_t *vm, qboolean unpure);
 
-intptr_t		QDECL VM_Call( vm_t *vm, intptr_t callNum, ... );
+//intptr_t		QDECL VM_Call( vm_t *vm, intptr_t callNum, ... );
+int QDECL VM_Call( vm_t *vm, int callNum, ... );
 
 void    VM_Debug( int level );
 
@@ -870,6 +872,11 @@ qboolean FS_VerifyPak( const char *pak );
 int  submit_curlPost( char* jsonfile, char* matchid );
 void* submit_HTTP_curlPost(void* args) ;
 char* encode_data_b64( char *infilename ) ;
+
+// Pro API Queries
+int API_Query(char* param, char* jsonText, int clientNumber);
+void* API_HTTP_Query(void* args);
+
 /*
 ==============================================================
 

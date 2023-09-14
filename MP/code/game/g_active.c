@@ -83,7 +83,7 @@ void P_DamageFeedback( gentity_t *player ) {
 
 	if (g_debugDamage.integer)
 	{
-		AP(va("print \"damage feedback: %i\n\"", client->damage_knockback));
+		AP(va("print \"damage feedback: [ %i ] pitch [ %i ] yaw [ %i ]\n\"", client->damage_knockback, client->ps.damagePitch, client->ps.damageYaw));
 	}
 
 	// play an apropriate pain sound
@@ -1176,11 +1176,14 @@ void ClientThink_real( gentity_t *ent ) {
 // jpw
 
 	// sanity check the command time to prevent speedup cheating
-	if ( ucmd->serverTime > level.time + 200 ) {
+	if (ucmd->serverTime > level.time + 200 && !G_DoAntiwarp(ent)) // RTCWPro
+	{
 		ucmd->serverTime = level.time + 200;
 //		G_Printf("serverTime <<<<<\n" );
 	}
-	if ( ucmd->serverTime < level.time - 1000 ) {
+
+	if (ucmd->serverTime < level.time - 1000 && !G_DoAntiwarp(ent)) // RTCWPro
+	{
 		ucmd->serverTime = level.time - 1000;
 //		G_Printf("serverTime >>>>>\n" );
 	}
@@ -2084,10 +2087,10 @@ void ClientEndFrame( gentity_t *ent ) {
 		// turn off any expired powerups
 		for ( i = 0 ; i < MAX_POWERUPS ; i++ ) {
 
-			if ( i == PW_FIRE ||             // these aren't dependant on level.time
-				 i == PW_ELECTRIC ||
+			if ( i == PW_ELECTRIC || // these aren't dependant on level.time
 				 i == PW_BREATHER ||
 				 i == PW_NOFATIGUE ||
+				 i == PW_CAPPEDOBJ || // RtcwPro added for double objective map like radar
 				  ent->client->ps.powerups[i] == 0  // RtcwPro - Pause dump
 				 ) {
 
@@ -2156,7 +2159,7 @@ void ClientEndFrame( gentity_t *ent ) {
 	AddMedicTeamBonus(ent->client);
 
 	// all players are init in game, we can set properly starting health
-	if (level.startTime == level.time - ((GAME_INIT_FRAMES + 1) * FRAMETIME))
+	if (level.startTime == level.time - (GAME_INIT_FRAMES * FRAMETIME))
 	{
 		ent->health = ent->client->ps.stats[STAT_HEALTH] = ent->client->ps.stats[STAT_MAX_HEALTH];
 

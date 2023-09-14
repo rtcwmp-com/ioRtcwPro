@@ -301,6 +301,11 @@
     <ClCompile Include="..\..\code\botlib\be_aas_routetable.c">
       <Filter>botlib</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\code\qcommon\api_query.c" />
+    <ClCompile Include="..\..\code\qcommon\http.c" />
+    <ClCompile Include="..\..\code\qcommon\http_main.c" />
+    <ClCompile Include="..\..\code\sys\linux_threads.c" />
+    <ClCompile Include="..\..\code\sys\win_threads.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\code\cgame\cg_public.h" />
@@ -412,6 +417,8 @@
       <Filter>botlib</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\qcommon\jansson_win\jansson_config.h" />
+    <ClInclude Include="..\..\code\qcommon\http.h" />
+    <ClInclude Include="..\..\code\qcommon\threads.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\code\asm\ftola.asm" />

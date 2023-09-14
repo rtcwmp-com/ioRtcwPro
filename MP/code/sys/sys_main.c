@@ -583,7 +583,8 @@ void *Sys_LoadGameDll(const char *name,
 	intptr_t (*systemcalls)(intptr_t, ...))
 {
 	void *libHandle;
-	void (*dllEntry)(intptr_t (*syscallptr)(intptr_t, ...));
+	//void (*dllEntry)(intptr_t (*syscallptr)(intptr_t, ...));
+	void (*dllEntry)(int (*syscallptr)(int, ...));
 
 	assert(name);
 
